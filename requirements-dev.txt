@@ -1,0 +1,17 @@
+# Dev-only extras — NOT needed for the deployed runtime (the bundled corpus
+# at data/real_corpus.json bypasses the HF loader, and local Whisper STT /
+# embedding eval are local-machine features). Install with:
+#   pip install -r requirements.txt -r requirements-dev.txt
+
+# Real dataset loading (only used when data/real_corpus.json is absent)
+datasets>=2.18
+pyarrow>=14.0
+
+# Key-free local STT fallback (demo/offline mode)
+faster-whisper>=1.0
+
+# Test-audio synthesis (Hindi TTS for the voice-mode benchmark)
+edge-tts>=6.0
+
+# Embedding evaluation (see DECISIONS.md — evaluated, not shipped in prod)
+sentence-transformers>=3.0

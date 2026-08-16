@@ -1,0 +1,82 @@
+[
+  {
+    "query_id": 1,
+    "query": "What is the capital of India?",
+    "passages": [
+      {"text": "New Delhi is the capital of India and seat of all three branches of the Government of India.", "is_selected": 1, "source": "wiki_delhi"},
+      {"text": "Mumbai is the financial capital of India and the most populous city in the country.", "is_selected": 0, "source": "wiki_mumbai"},
+      {"text": "India is a federal parliamentary constitutional republic located in South Asia.", "is_selected": 0, "source": "wiki_india"}
+    ],
+    "answer": "The capital of India is New Delhi."
+  },
+  {
+    "query_id": 2,
+    "query": "How does photosynthesis work in plants?",
+    "passages": [
+      {"text": "Photosynthesis is the process by which green plants use sunlight, water and carbon dioxide to create oxygen and energy in the form of glucose.", "is_selected": 1, "source": "bio_101"},
+      {"text": "Chlorophyll is the pigment that gives plants their green color and is essential for absorbing light energy during photosynthesis.", "is_selected": 1, "source": "bio_102"},
+      {"text": "Cellular respiration is the process by which cells break down glucose to release energy, and it is essentially the reverse of photosynthesis.", "is_selected": 0, "source": "bio_103"}
+    ],
+    "answer": "Photosynthesis is the process where plants use sunlight, water, and carbon dioxide, aided by chlorophyll, to produce glucose and oxygen."
+  },
+  {
+    "query_id": 3,
+    "query": "What are the symptoms of dehydration?",
+    "passages": [
+      {"text": "Common symptoms of dehydration include thirst, dark yellow urine, fatigue, dizziness, and dry mouth.", "is_selected": 1, "source": "health_201"},
+      {"text": "Severe dehydration can lead to confusion, rapid heartbeat, and fainting, and requires immediate medical attention.", "is_selected": 1, "source": "health_202"},
+      {"text": "Drinking eight glasses of water a day is a commonly cited but not universally accurate hydration guideline.", "is_selected": 0, "source": "health_203"}
+    ],
+    "answer": "Dehydration symptoms include thirst, dark urine, fatigue, dizziness, and dry mouth; severe cases can cause confusion and fainting."
+  },
+  {
+    "query_id": 4,
+    "query": "Who wrote the Ramayana?",
+    "passages": [
+      {"text": "The Ramayana is an ancient Sanskrit epic traditionally attributed to the sage Valmiki.", "is_selected": 1, "source": "lit_301"},
+      {"text": "The Mahabharata is another major Sanskrit epic of ancient India, traditionally attributed to Vyasa.", "is_selected": 0, "source": "lit_302"},
+      {"text": "The Ramayana narrates the life of Rama, a legendary prince of the Kosala Kingdom.", "is_selected": 0, "source": "lit_303"}
+    ],
+    "answer": "The Ramayana is traditionally attributed to the sage Valmiki."
+  },
+  {
+    "query_id": 5,
+    "query": "What causes monsoon rains in India?",
+    "passages": [
+      {"text": "The Indian monsoon is caused by the differential heating of land and sea, which creates a pressure gradient that draws moist air from the Indian Ocean.", "is_selected": 1, "source": "geo_401"},
+      {"text": "The Himalayas act as a barrier that influences the monsoon's path and intensity across the subcontinent.", "is_selected": 1, "source": "geo_402"},
+      {"text": "India has two main monsoon seasons: the southwest monsoon from June to September and the northeast monsoon from October to December.", "is_selected": 0, "source": "geo_403"}
+    ],
+    "answer": "Monsoon rains in India are caused by differential land-sea heating, which draws moist air from the Indian Ocean, with the Himalayas shaping the pattern."
+  },
+  {
+    "query_id": 6,
+    "query": "What is machine learning?",
+    "passages": [
+      {"text": "Machine learning is a subset of artificial intelligence where systems learn patterns from data rather than being explicitly programmed.", "is_selected": 1, "source": "cs_501"},
+      {"text": "Supervised learning is a type of machine learning where models are trained on labeled input-output pairs.", "is_selected": 0, "source": "cs_502"},
+      {"text": "Deep learning uses multi-layered neural networks and is a specialized subfield of machine learning.", "is_selected": 0, "source": "cs_503"}
+    ],
+    "answer": "Machine learning is a subset of AI where systems learn patterns from data instead of following explicit programmed rules."
+  },
+  {
+    "query_id": 7,
+    "query": "What is the tallest mountain in the world?",
+    "passages": [
+      {"text": "Mount Everest, located in the Himalayas on the border of Nepal and China, is the tallest mountain above sea level at 8,849 meters.", "is_selected": 1, "source": "geo_601"},
+      {"text": "K2 is the second-highest mountain in the world, located in the Karakoram range.", "is_selected": 0, "source": "geo_602"},
+      {"text": "Mauna Kea in Hawaii is taller than Everest when measured from its base on the ocean floor.", "is_selected": 0, "source": "geo_603"}
+    ],
+    "answer": "Mount Everest is the tallest mountain above sea level, at 8,849 meters."
+  },
+  {
+    "query_id": 8,
+    "query": "How do vaccines work?",
+    "passages": [
+      {"text": "Vaccines work by introducing a harmless piece of a pathogen, or a weakened version of it, to train the immune system to recognize and fight the real infection.", "is_selected": 1, "source": "med_701"},
+      {"text": "After vaccination, the immune system produces memory cells that respond quickly if the body encounters the actual pathogen later.", "is_selected": 1, "source": "med_702"},
+      {"text": "Herd immunity occurs when a large enough portion of a population becomes immune, reducing disease spread even among unvaccinated individuals.", "is_selected": 0, "source": "med_703"}
+    ],
+    "answer": "Vaccines train the immune system by exposing it to a harmless piece or weakened form of a pathogen, prompting memory cells that respond fast to real infections later."
+  }
+]

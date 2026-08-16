@@ -1,0 +1,9 @@
+.venv
+venv
+__pycache__
+*.pyc
+data/cache
+data/models
+data/audio
+.env
+.git

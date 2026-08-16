@@ -1,0 +1,50 @@
+{
+  "n_queries": 10,
+  "mode": "voice",
+  "chunking_strategy": "metadata_aware",
+  "corpus": {
+    "records": 2000,
+    "chunks": 22110
+  },
+  "stt_provider": "whisper",
+  "mock_generation": false,
+  "status_counts": {
+    "ok": 0,
+    "refused": 2,
+    "error": 8
+  },
+  "guardrail_checks": "n/a in voice mode (fixed audio clips, not the text query sets)",
+  "full_pipeline_ms": {
+    "p50": 2840.24,
+    "p70": 2968.33,
+    "p100_max": 9654.86,
+    "mean": 3509.13
+  },
+  "per_stage_ms": {
+    "stt": {
+      "p50": 2787.43,
+      "p70": 2908.48,
+      "p100_max": 9617.13,
+      "mean": 3454.6
+    },
+    "guardrail_unsafe_input": {
+      "p50": 0.01,
+      "p70": 0.01,
+      "p100_max": 0.01,
+      "mean": 0.01
+    },
+    "retrieval": {
+      "p50": 54.42,
+      "p70": 58.04,
+      "p100_max": 70.35,
+      "mean": 54.15
+    },
+    "guardrail_off_topic": {
+      "p50": 0.24,
+      "p70": 0.3,
+      "p100_max": 0.7,
+      "mean": 0.32
+    }
+  },
+  "note": "Generation NOT RUN: ANTHROPIC_API_KEY not set in this environment, so generation rows are structured ERROR results — full_pipeline_ms covers retrieval + guardrails only. Set the key and re-run without --mock-gen for real generation latency. Corpus: 2000 records / 22110 chunks (real MSMARCO-XI Hindi). STT provider: whisper (voice-mode run). "
+}
