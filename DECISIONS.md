@@ -192,25 +192,57 @@ Groq Whisper is retained as the fallback (not removed) because it is free,
 hosted, works on serverless, and the team may want it for cost reasons
 after the hackathon. The key point for compliance: Sarvam is the DEFAULT.
 
-## 10. Benchmark: fresh numbers with current model (openai/gpt-oss-20b)
+## 10. Retrieval optimization: 27ms → 13ms P50 (2.1x speedup)
 
-The previous benchmark numbers were measured on `llama-3.3-70b-versatile`,
-which Groq has since removed from its catalog. Re-ran the full 55-query
-benchmark (text mode, 2000-record corpus) against `openai/gpt-oss-20b`:
+Profiling revealed TF-IDF cosine was the bottleneck: 22.79ms out of 26.45ms
+(86% of retrieval time). The sklearn `cosine_similarity` function densifies
+the sparse TF-IDF matrix, which is wasteful when scoring only the candidate
+docs.
+
+Three optimizations applied:
+
+1. **Precomputed document L2 norms** — `||d||` is constant per document and
+   can be computed once at index build. At query time: `cosine(q,d) =
+   dot(q,d) / (||q|| * ||d||)` — the sparse dot product `tfidf[cand] . q_vec`
+   avoids densifying the full matrix.
+
+2. **Boolean mask for candidate docs** — replaced `np.unique(np.concatenate(...))`
+   (which sorts) with a boolean mask `np.flatnonzero(mask)`. For typical
+   2-6 term queries this is ~2x faster.
+
+3. **Removed sklearn cosine_similarity import** — the sparse dot + precomputed
+   norms produce identical values (verified: max diff < 1e-6) with no sklearn
+   overhead.
+
+Measured impact:
+
+| step | before | after |
+|---|---|---|
+| TF-IDF cosine | 22.79ms | 8.33ms |
+| candidate docs | 1.81ms | ~0.5ms |
+| BM25 scoring | 0.60ms | 0.60ms |
+| **full search** | **26.45ms** | **7.56ms** |
+
+Final benchmark (55 queries, 2000-record corpus):
 
 | metric | P50 | P70 | P100 |
 |---|---|---|---|
-| retrieval | 27 ms | 33 ms | 49 ms |
-| generation | 1,339 ms | 2,668 ms | 20,598 ms |
-| full pipeline | 724 ms | 1,304 ms | 20,633 ms |
+| retrieval | 12.8 ms | 14.3 ms | 25.2 ms |
+| generation (groq, openai/gpt-oss-20b) | 1,364 ms | 5,436 ms | 23,950 ms |
+| full pipeline | 932 ms | 1,209 ms | 23,962 ms |
 
-Key changes from old numbers: retrieval improved (38→27ms P50, from
-vectorized scoring optimization); generation is slower (1,053→1,339ms P50)
-because `openai/gpt-oss-20b` is a smaller model than the old `llama-3.3-70b`.
-The P100 tail (20.6s) is one rate-limit retry, same artifact as before.
+The P100 tail is rate-limit retries. Retrieval stays **sub-15 ms P50** —
+the architecturally controllable part is well within budget.
 
-The grounding check now catches 8/30 on-topic queries (vs 2 before) because
-the smaller model sometimes paraphrases rather than quoting context verbatim.
+## 11. Benchmark: fresh numbers with current model (openai/gpt-oss-20b)
+
+The previous benchmark numbers were measured on `llama-3.3-70b-versatile`,
+which Groq has since removed from its catalog. Re-ran against
+`openai/gpt-oss-20b` (see §10 for the optimized retrieval numbers).
+
+Generation is slower (1,053→1,364ms P50) because `openai/gpt-oss-20b` is
+a smaller model than the old `llama-3.3-70b`. The grounding check catches
+more on-topic queries (21/30 not-refused vs 28/30 before) because the
+smaller model sometimes paraphrases rather than quoting context verbatim.
 This is correct behavior — refusing is safer than presenting ungrounded
-answers — but it means fewer OK results in the benchmark. The 22/30
-on-topic-not-refused rate is honest and documented.
+answers.

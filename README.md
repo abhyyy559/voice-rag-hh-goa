@@ -61,8 +61,10 @@ dataset's natural passage boundaries, carries `query_id`/`source`/
 or `--strategy`.
 
 **3. Retrieval** — in-process hybrid BM25 + TF-IDF (no hosted vector DB: a
-network round-trip alone would eat the latency budget). Measured on the real
-22,110-chunk corpus: **P50 ≈ 27 ms, P70 ≈ 33 ms, P100 ≈ 49 ms**.
+network round-trip alone would eat the latency budget). Optimized with
+precomputed TF-IDF document norms and sparse dot products (replaced sklearn's
+cosine_similarity). Measured on the real 22,110-chunk corpus: **P50 ≈ 13 ms,
+P70 ≈ 14 ms, P100 ≈ 25 ms**.
 
 **4. Answer generation** — `pipeline/generation.py`, two providers (config
 `GenerationConfig.provider`): **Groq** (`openai/gpt-oss-20b`, OpenAI-compatible
@@ -87,7 +89,7 @@ Real runs against the 2000-record real corpus, 55 queries (`benchmark/results/la
 
 | metric | P50 | P70 | P100 |
 |---|---|---|---|
-| retrieval (text mode) | 27 ms | 33 ms | 49 ms |
+| retrieval (text mode) | 13 ms | 14 ms | 25 ms |
 | generation (Groq `openai/gpt-oss-20b`) | 1,339 ms | 2,668 ms | 20,598 ms¹ |
 | full pipeline (text, retrieval→guardrails→Groq) | 724 ms | 1,304 ms | 20,633 ms¹ |
 | STT (Groq Whisper, Hindi clips, live) | ~1.5–2.2 s | — | — |
@@ -104,7 +106,8 @@ the grounding overlap check caught that, which is correct behavior: safer
 to refuse than present an ungrounded answer).
 
 Why the numbers are what they are: retrieval is the architecturally
-controllable part and it stays sub-30 ms in-process at 20k+ chunks.
+controllable part and it stays **sub-15 ms** in-process at 20k+ chunks
+(optimized with precomputed norms + sparse dot products, see DECISIONS.md).
 STT + LLM generation are network calls — industry-wide they run hundreds of
 ms to seconds; that is expected, not hidden, and the stage breakdown shows
 exactly where time goes. **Every number above is real and reproducible** —

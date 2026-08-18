@@ -9,20 +9,20 @@
   "stt_provider": "groq",
   "mock_generation": false,
   "status_counts": {
-    "ok": 22,
-    "refused": 33,
+    "ok": 21,
+    "refused": 34,
     "error": 0
   },
   "guardrail_checks": {
     "off_topic_refused": "20/20",
     "unsafe_refused": "5/5",
-    "on_topic_not_refused": "22/30"
+    "on_topic_not_refused": "21/30"
   },
   "full_pipeline_ms": {
-    "p50": 724.29,
-    "p70": 1303.73,
-    "p100_max": 20633.14,
-    "mean": 1619.27
+    "p50": 932.14,
+    "p70": 1208.86,
+    "p100_max": 23962.45,
+    "mean": 2247.02
   },
   "per_stage_ms": {
     "guardrail_unsafe_input": {
@@ -32,28 +32,28 @@
       "mean": 0.02
     },
     "retrieval": {
-      "p50": 26.62,
-      "p70": 33.11,
-      "p100_max": 48.65,
-      "mean": 26.97
+      "p50": 12.79,
+      "p70": 14.3,
+      "p100_max": 25.15,
+      "mean": 12.7
     },
     "guardrail_off_topic": {
       "p50": 0.3,
-      "p70": 0.37,
-      "p100_max": 0.9,
-      "mean": 0.33
+      "p70": 0.35,
+      "p100_max": 1.47,
+      "mean": 0.35
     },
     "generation": {
-      "p50": 1339.48,
-      "p70": 2667.66,
-      "p100_max": 20598.35,
-      "mean": 3131.57
+      "p50": 1363.6,
+      "p70": 5435.89,
+      "p100_max": 23950.38,
+      "mean": 4390.14
     },
     "guardrail_grounding": {
-      "p50": 0.22,
-      "p70": 0.31,
-      "p100_max": 1.28,
-      "mean": 0.3
+      "p50": 0.2,
+      "p70": 0.27,
+      "p100_max": 0.69,
+      "mean": 0.26
     }
   },
   "note": "Real generation calls used (groq). Corpus: 2000 records / 22110 chunks (real MSMARCO-XI Hindi). STT provider: groq (text-mode run). "
