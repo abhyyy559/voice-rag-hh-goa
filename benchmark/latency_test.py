@@ -9,8 +9,8 @@ real on-topic gold queries (sampled from the corpus at runtime), a
 
 Modes:
   --mode text   (default) run_text_query: retrieval + guardrails + generation.
-  --mode voice  run_voice_query through STT (Sarvam if key present, else
-                local Whisper) using the audio clips in data/audio/.
+  --mode voice  run_voice_query through STT (Groq Whisper if GROQ_API_KEY
+                is set, else local Whisper) using the audio clips in data/audio/.
 
 Usage:
     python benchmark/latency_test.py --n 30 --dataset real
@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pipeline.config import PipelineConfig
 from pipeline.harness import VoiceRAGHarness, Status
 from pipeline.stt import resolve_stt_provider
+from pipeline.generation import resolve_generation_provider
 from data.load_dataset import load_dataset_with_fallback
 from benchmark.query_sets import OFF_TOPIC, UNSAFE
 
@@ -58,8 +59,11 @@ def sample_on_topic_queries(corpus, n=30, seed=42):
 
 
 def run_benchmark(n: int = 30, dataset: str = "real", chunking_strategy: str = "metadata_aware",
-                  mock_gen: bool = False, mode: str = "text", corpus_limit: int = 2000):
-    corpus = load_dataset_with_fallback(prefer_real=(dataset == "real"), limit=corpus_limit)
+                  mock_gen: bool = False, mode: str = "text", corpus_limit: int = 0,
+                  inter_query_delay: float = 4.0):
+    # corpus_limit 0 = the complete dataset (full 97,941-record Hindi
+    # validation parquet). Cap it to bound index build time/RAM.
+    corpus = load_dataset_with_fallback(prefer_real=(dataset == "real"), limit=corpus_limit or None)
     cfg = PipelineConfig()
     cfg.chunking.active_strategy = chunking_strategy
     cfg.generation.use_mock = mock_gen
@@ -91,6 +95,12 @@ def run_benchmark(n: int = 30, dataset: str = "real", chunking_strategy: str = "
             print(f"           -> refused: {result.refusal_reason[:120]}")
         elif result.status == Status.ERROR:
             print(f"           -> error: {result.error[:120]}")
+        # Respect provider rate limits (Groq free tier: ~12k tokens/min,
+        # ~1000 req/hour): space out only the queries that actually called
+        # generation. Refusals (off-topic/unsafe) never hit the LLM, so they
+        # don't need pacing. This gap is NOT part of any measured latency.
+        if inter_query_delay > 0 and "generation" in result.timing_breakdown():
+            time.sleep(inter_query_delay)
 
     totals = [r.total_ms for r in all_results]
     ok_count = sum(1 for r in all_results if r.status == Status.OK)
@@ -119,18 +129,19 @@ def run_benchmark(n: int = 30, dataset: str = "real", chunking_strategy: str = "
 
     stt_provider = resolve_stt_provider(cfg.stt)
 
-    generation_blocked = (not mock_gen and os.environ.get("ANTHROPIC_API_KEY") in (None, ""))
+    generation_provider = resolve_generation_provider(cfg.generation)
+    generation_blocked = not generation_provider
     note = (
         (f"*** MOCK GENERATION — DO NOT SUBMIT THESE NUMBERS *** generation used a local "
          f"extractive stub with no LLM/network call; full_pipeline_ms excludes real "
          f"generation latency entirely. "
          if mock_gen else
-         ("Generation NOT RUN: ANTHROPIC_API_KEY not set in this environment, so generation "
-          "rows are structured ERROR results — full_pipeline_ms covers retrieval + "
-          "guardrails only. Set the key and re-run without --mock-gen for real generation "
-          "latency. "
+         (f"Generation NOT RUN: no GROQ_API_KEY / ANTHROPIC_API_KEY set in this environment, so "
+          f"generation rows are structured ERROR results — full_pipeline_ms covers retrieval + "
+          f"guardrails only. Set a key and re-run without --mock-gen for real generation "
+          f"latency. "
           if generation_blocked else
-          "Real Anthropic API calls used for generation. "))
+          f"Real generation calls used ({generation_provider}). "))
         + f"Corpus: {len(corpus)} records / {len(harness.chunks)} chunks (real MSMARCO-XI Hindi). "
         + f"STT provider: {stt_provider} ({mode}-mode run). "
     )
@@ -181,7 +192,13 @@ if __name__ == "__main__":
     parser.add_argument("--strategy", choices=["fixed", "sentence", "metadata_aware", "hybrid"], default="metadata_aware")
     parser.add_argument("--mock-gen", action="store_true", help="use local extractive stub instead of real LLM call (dev only, NOT for submission numbers)")
     parser.add_argument("--mode", choices=["text", "voice"], default="text")
-    parser.add_argument("--corpus-limit", type=int, default=2000)
+    parser.add_argument("--corpus-limit", type=int, default=0,
+                        help="max records to index (0 = complete dataset, ~98k records)")
+    parser.add_argument("--inter-query-delay", type=float, default=4.0,
+                        help="seconds to sleep between queries that call generation "
+                             "(rate-limit pacing for Groq's ~12k tokens/min free tier; "
+                             "not part of measured latency). Set 0 to disable.")
     args = parser.parse_args()
     run_benchmark(n=args.n, dataset=args.dataset, chunking_strategy=args.strategy,
-                  mock_gen=args.mock_gen, mode=args.mode, corpus_limit=args.corpus_limit)
+                  mock_gen=args.mock_gen, mode=args.mode, corpus_limit=args.corpus_limit,
+                  inter_query_delay=args.inter_query_delay)

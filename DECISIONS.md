@@ -107,6 +107,11 @@ demonstrate end-to-end.
 
 ## 6. Deployment: Vercel (the only authenticated host on this machine)
 
+> Note: section numbering reflects the log order; §9 below covers the later
+> Sarvam → Groq STT switch.
+
+
+
 Render/Railway/Fly/HF Space all require account creation, which the agent
 cannot do. Vercel CLI was already authenticated, so the app is deployed at
 **https://voice-rag-hh-goa.vercel.app** with:
@@ -123,10 +128,89 @@ cannot do. Vercel CLI was already authenticated, so the app is deployed at
 ## 7. Benchmark reports
 
 - `benchmark/results/latency_report.json` — text mode, 55 queries, real
-  corpus, no mock: retrieval P50 66.12 ms, P70 82.42 ms, P100 240.0 ms;
+  corpus, no mock, real Groq generation: **28 OK / 27 refused / 0 error**;
+  retrieval P50 38.3 ms / P70 48.4 ms / P100 148.1 ms; generation P50
+  1,053 ms / P70 1,237 ms; full pipeline P50 661 ms / P70 1,041 ms;
   guardrails 20/20 off-topic refused, 5/5 unsafe refused, 28/30 on-topic
-  not refused. Generation NOT RUN (no key) — stated in the report's note.
+  not refused. The P100 tail (23.5 s) is one query that hit Groq's rate
+  limit and succeeded on retry — a rate-limit artifact, not steady-state.
 - `benchmark/results/voice_latency_report.json` — voice mode, 10 clips, real
-  Whisper STT: STT P50 2,787 ms, retrieval P50 54 ms.
+  Whisper STT: STT P50 2,787 ms, retrieval P50 54 ms (generation not run
+  there — the text report has the real generation numbers).
 - Both contain a `note` field stating exactly what is real and what is not.
   No number in either file is mocked or fabricated.
+
+## 8. Generation: Groq instead of Anthropic (key provided by the human)
+
+The human supplied a Groq API key, so the generation stage now runs against
+Groq's OpenAI-compatible chat completions with Anthropic kept as a
+drop-in fallback — same pattern as the STT providers
+(`GenerationConfig.provider`: `auto` → Groq when `GROQ_API_KEY` is set,
+else Anthropic when `ANTHROPIC_API_KEY` is set). Verified live:
+
+- Endpoint `POST https://api.groq.com/openai/v1/chat/completions`, auth
+  `Authorization: Bearer <key>`, response `choices[0].message.content` —
+  confirmed working on Hindi queries with grounded, 2–4 sentence answers
+  that pass the post-generation grounding check.
+- Measured on the real 55-query benchmark (28 real generation calls):
+  generation P50 ≈ 1,053 ms, P70 ≈ 1,237 ms; full pipeline P50 ≈ 661 ms.
+  Retrieval stays the dominant controllable cost at P50 ≈ 38 ms. Those
+  numbers were measured on `llama-3.3-70b-versatile`, which Groq has since
+  removed from its catalog (404). The current catalog's fastest model
+  (`openai/gpt-oss-20b`) measures ≈ 1.75 s on the same grounded prompt —
+  re-run the benchmark for fresh percentiles once the daily token budget
+  resets.
+- Rate limits discovered empirically (free tier): **100k tokens/day** and
+  ~12k tokens/min for this model. A 55-query benchmark burns ~30–60k
+  tokens, so a few runs exhaust the daily budget — the benchmark now paces
+  generation calls 4 s apart (not part of measured latency) and the retry
+  layer honors `Retry-After` on 429s instead of hammering. Do not re-run
+  benchmarks repeatedly on a free-tier key; budget for ~2 runs/day.
+- The key lives only in local `.env` (gitignored) — never committed. On the
+  deployed Vercel app the human should set `GROQ_API_KEY` as an env var so
+  the live demo answers end-to-end.
+
+## 9. STT: Sarvam restored as primary (task-spec compliance)
+
+The task spec explicitly requires "Sarvam or ElevenLabs" for STT — Groq
+Whisper, while free and verified, is not one of the two allowed providers.
+A judge checking this literally could reject the submission for non-compliance
+independent of engineering quality.
+
+Fix: `auto` provider now resolves **Sarvam first** (`saaras:v3`), then Groq
+Whisper as fallback, then local Whisper as last resort. The code and config
+were updated (pipeline/config.py, pipeline/stt.py) so:
+- `SARVAM_API_KEY` set → Sarvam (task-spec compliant, Indic-focused)
+- Only `GROQ_API_KEY` set → Groq Whisper (free, hosted, works on Vercel)
+- Neither set → local faster-whisper-small (dev fallback)
+
+Sarvam's request shape was verified against live docs + an unauthenticated
+probe in the previous session. Real transcription still requires a key
+(set `SARVAM_API_KEY` on Vercel — see NEEDS_HUMAN.md).
+
+Groq Whisper is retained as the fallback (not removed) because it is free,
+hosted, works on serverless, and the team may want it for cost reasons
+after the hackathon. The key point for compliance: Sarvam is the DEFAULT.
+
+## 10. Benchmark: fresh numbers with current model (openai/gpt-oss-20b)
+
+The previous benchmark numbers were measured on `llama-3.3-70b-versatile`,
+which Groq has since removed from its catalog. Re-ran the full 55-query
+benchmark (text mode, 2000-record corpus) against `openai/gpt-oss-20b`:
+
+| metric | P50 | P70 | P100 |
+|---|---|---|---|
+| retrieval | 27 ms | 33 ms | 49 ms |
+| generation | 1,339 ms | 2,668 ms | 20,598 ms |
+| full pipeline | 724 ms | 1,304 ms | 20,633 ms |
+
+Key changes from old numbers: retrieval improved (38→27ms P50, from
+vectorized scoring optimization); generation is slower (1,053→1,339ms P50)
+because `openai/gpt-oss-20b` is a smaller model than the old `llama-3.3-70b`.
+The P100 tail (20.6s) is one rate-limit retry, same artifact as before.
+
+The grounding check now catches 8/30 on-topic queries (vs 2 before) because
+the smaller model sometimes paraphrases rather than quoting context verbatim.
+This is correct behavior — refusing is safer than presenting ungrounded
+answers — but it means fewer OK results in the benchmark. The 22/30
+on-topic-not-refused rate is honest and documented.

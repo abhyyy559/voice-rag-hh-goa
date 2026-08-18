@@ -8,9 +8,9 @@ unlock the last two stages of the pipeline.
 ---
 
 ## 1. Record the 90-second team/process video
-- [ ] Explain the architecture: voice → Sarvam STT → hybrid BM25+TF-IDF
-      retrieval over ai4bharat/MSMARCO-XI → grounded Claude generation →
-      3-stage guardrails.
+- [ ] Explain the architecture: voice → Sarvam STT (primary, task-spec compliant)
+      → hybrid BM25+TF-IDF retrieval over ai4bharat/MSMARCO-XI → grounded
+      Groq LLM generation → 3-stage guardrails.
 - [ ] Show the honest latency story (retrieval sub-100ms, generation+STT are
       network calls).
 
@@ -35,24 +35,23 @@ unlock the last two stages of the pipeline.
 
 ## 5. API keys (unblocks STT + generation end-to-end)
 
-No `SARVAM_API_KEY` or `ANTHROPIC_API_KEY` exists anywhere on this machine,
-and the agent cannot create accounts or buy credits. Everything else works;
-these two stages are the only ones that can't be exercised for real.
+The task spec requires Sarvam or ElevenLabs for STT. The code now defaults
+to **Sarvam** when `SARVAM_API_KEY` is set, falling back to Groq Whisper
+when only `GROQ_API_KEY` is available.
 
-- [ ] **Sarvam** — get a key at https://dashboard.sarvam.ai, then either:
-      - set it on the Vercel project: `vercel env add SARVAM_API_KEY production`,
-        or
-      - put it in a local `.env` (copy `.env.example`) for local runs.
-- [ ] **Anthropic** — get a key at https://console.anthropic.com, set it the
-      same way (`ANTHROPIC_API_KEY`). Model is `claude-sonnet-4-6`.
+- [ ] **Set `SARVAM_API_KEY`** on the Vercel project for task-spec-compliant
+      STT. Sign up at https://dashboard.sarvam.ai (free trial available).
+      Then: `vercel env add SARVAM_API_KEY production` + redeploy.
+- [ ] **Set `GROQ_API_KEY`** on the Vercel project for generation (+ fallback
+      STT if Sarvam key is not set). Already set locally in `.env`.
+      `vercel env add GROQ_API_KEY production` + redeploy.
+- [ ] **Anthropic** — optional generation fallback: `ANTHROPIC_API_KEY`.
 
-Once set, re-run the benchmark for the missing real numbers:
+To re-run the real benchmark after the token window resets:
 ```bash
-python benchmark/latency_test.py --n 55 --dataset real        # text mode
+python benchmark/latency_test.py --n 55 --dataset real --corpus-limit 2000  # text mode
 python benchmark/latency_test.py --n 10 --dataset real --mode voice
 ```
-The reports will then include real generation latency, and the live link's
-voice + answer path will work end-to-end.
 
 ## 6. Optional (recommended) deployment hardening
 

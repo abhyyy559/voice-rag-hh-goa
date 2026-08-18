@@ -1,10 +1,13 @@
 """
-Answer generation stage. Uses the Anthropic Messages API with a strict
-grounding instruction so the model prefers "not enough information" over
-guessing — the guardrails.check_grounding step then double-checks that
-behaviorally instead of just trusting the prompt.
+Answer generation stage. Two providers (config.py -> GenerationConfig.provider):
+  - "groq"      : Groq's OpenAI-compatible chat completions API (primary when
+                  GROQ_API_KEY is set; fast, cheap, verified live Aug 2026).
+  - "anthropic" : Anthropic Messages API (claude-sonnet-4-6), used when no
+                  GROQ_API_KEY but ANTHROPIC_API_KEY is set.
+Both use the same strict grounding instruction so the model prefers "not
+enough information" over guessing — the guardrails.check_grounding step then
+double-checks that behaviorally instead of just trusting the prompt.
 """
-import os
 import requests
 from dataclasses import dataclass
 from typing import List
@@ -27,6 +30,22 @@ class GenerationResult:
     raw_response: dict
 
 
+def resolve_generation_provider(cfg: GenerationConfig) -> str:
+    """"auto" resolves to groq -> anthropic by which key is set; explicit
+    "groq"/"anthropic" pin the provider (empty string = no key for it)."""
+    if cfg.use_mock:
+        return "mock"
+    if cfg.provider == "groq":
+        return "groq" if cfg.groq_api_key else ""
+    if cfg.provider == "anthropic":
+        return "anthropic" if cfg.anthropic_api_key else ""
+    if cfg.groq_api_key:
+        return "groq"
+    if cfg.anthropic_api_key:
+        return "anthropic"
+    return ""
+
+
 def _build_prompt(query: str, results: List[RetrievalResult]) -> str:
     context_block = "\n\n".join(
         f"[{i+1}] {r.chunk.text}" for i, r in enumerate(results)
@@ -40,6 +59,25 @@ def _build_prompt(query: str, results: List[RetrievalResult]) -> str:
 
 class GenerationError(Exception):
     pass
+
+
+class RateLimitedError(GenerationError):
+    """The API returned 429 (rate limit). Raised so the retry layer can back
+    off for longer than a transient network error — Groq's free tier is
+    ~1000 req/hour and ~12k tokens/minute, so bursts WILL hit this."""
+
+    def __init__(self, message: str, retry_after: float = 0.0):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+def _generation_wait(retry_state) -> float:
+    """Custom tenacity wait: honor the API's Retry-After hint on 429s
+    (with a floor so we don't hammer), else exponential backoff."""
+    exc = retry_state.outcome.exception()
+    if isinstance(exc, RateLimitedError) and exc.retry_after > 0:
+        return max(exc.retry_after, 4.0)
+    return min(2 ** (retry_state.attempt_number - 1), 10.0)
 
 
 def generate_answer_mock(query: str, results: List[RetrievalResult], cfg: GenerationConfig) -> GenerationResult:
@@ -61,10 +99,10 @@ def generate_answer_mock(query: str, results: List[RetrievalResult], cfg: Genera
     return GenerationResult(answer=answer, raw_response={"mock": True, "source_chunk": results[0].chunk.chunk_id})
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4),
+@retry(stop=stop_after_attempt(4), wait=_generation_wait,
        retry=retry_if_exception_type(GenerationError), reraise=True)
-def _generate_answer_once(query: str, results: List[RetrievalResult], cfg: GenerationConfig,
-                          api_key: str, prompt: str) -> GenerationResult:
+def _generate_answer_anthropic_once(query: str, results: List[RetrievalResult], cfg: GenerationConfig,
+                                    api_key: str, prompt: str) -> GenerationResult:
     try:
         resp = requests.post(
             cfg.api_url,
@@ -93,11 +131,59 @@ def _generate_answer_once(query: str, results: List[RetrievalResult], cfg: Gener
     return GenerationResult(answer=answer, raw_response=data)
 
 
+@retry(stop=stop_after_attempt(4), wait=_generation_wait,
+       retry=retry_if_exception_type(GenerationError), reraise=True)
+def _generate_answer_groq_once(query: str, results: List[RetrievalResult], cfg: GenerationConfig,
+                               api_key: str, prompt: str) -> GenerationResult:
+    """Groq's OpenAI-compatible chat completions endpoint. Request/response
+    shape is the standard chat.completion object: choices[0].message.content."""
+    try:
+        resp = requests.post(
+            cfg.groq_endpoint,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": cfg.groq_model,
+                "max_tokens": cfg.max_tokens,
+                "temperature": 0.2,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ],
+            },
+            timeout=cfg.timeout_s,
+        )
+        if resp.status_code == 429:
+            retry_after = float(resp.headers.get("Retry-After", "0") or 0)
+            raise RateLimitedError(f"Groq rate limit (429), retry after {retry_after}s", retry_after=retry_after)
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException as e:
+        raise GenerationError(str(e)) from e
+
+    try:
+        answer = (data["choices"][0]["message"]["content"] or "").strip()
+    except (KeyError, IndexError, TypeError) as e:
+        raise GenerationError(f"unexpected Groq response shape: {str(data)[:200]}") from e
+    if not answer:
+        raise GenerationError("empty response from generation API")
+    return GenerationResult(answer=answer, raw_response=data)
+
+
 def generate_answer(query: str, results: List[RetrievalResult], cfg: GenerationConfig) -> GenerationResult:
-    """Missing-key errors are checked OUTSIDE the retried inner call so a
-    missing key fails fast (single attempt) instead of burning 3 retries."""
-    api_key = os.getenv("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        raise GenerationError("ANTHROPIC_API_KEY not set in environment")
+    """Dispatches to the configured provider. Missing-key errors are checked
+    OUTSIDE the retried inner calls so a missing key fails fast (single
+    attempt) instead of burning 3 retries."""
+    provider = resolve_generation_provider(cfg)
+    if provider == "mock":
+        return generate_answer_mock(query, results, cfg)
+    if not provider:
+        raise GenerationError(
+            "no generation API key set — set GROQ_API_KEY (or ANTHROPIC_API_KEY) in the environment"
+        )
     prompt = _build_prompt(query, results)
-    return _generate_answer_once(query, results, cfg, api_key, prompt)
+    if provider == "groq":
+        return _generate_answer_groq_once(query, results, cfg, cfg.groq_api_key, prompt)
+    return _generate_answer_anthropic_once(query, results, cfg, cfg.anthropic_api_key, prompt)

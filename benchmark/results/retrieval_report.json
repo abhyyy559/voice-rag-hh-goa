@@ -1,0 +1,19 @@
+{
+  "n_queries": 50,
+  "chunking_strategy": "metadata_aware",
+  "top_k": 5,
+  "corpus": {
+    "records": 97941,
+    "chunks": 1109913
+  },
+  "latency_budget_ms": 200.0,
+  "passed": false,
+  "retrieval_ms": {
+    "avg": 20410.29,
+    "p50": 13723.22,
+    "p95": 57028.06,
+    "p99": 135441.16,
+    "p100_max": 138890.91
+  },
+  "note": "Retrieval stage only (VectorIndex.search: BM25 + TF-IDF cosine + combined top-k), timed exactly as the harness's 'retrieval' stage — no STT/guardrails/generation, no network calls. Queries sampled from the corpus's own gold queries (seed=42). "
+}

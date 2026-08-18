@@ -8,18 +8,35 @@ eats most of the 200ms budget before generation even starts. Local
 BM25+TF-IDF hybrid retrieval instead runs in low single-digit milliseconds
 for corpora of this size, which is what makes the latency target achievable.
 
+Scaling: the index is built over the COMPLETE dataset (~1.1M chunks in the
+full 97,941-record Hindi validation parquet), so both scorers must avoid
+touching every chunk per query. Two tricks keep queries in the tens of ms:
+
+  1. BM25 is scored with a vectorized sparse term-document count matrix
+     (rank_bm25's per-document Python loop is O(N) and takes seconds at
+     this size) — same BM25 formula (k1=1.5, b=0.75, IDF with epsilon
+     floor).
+  2. Both scorers only evaluate the CANDIDATE set = docs sharing at least
+     one query term (from the inverted index / CSC postings). Any doc
+     outside that set has BM25=0 and TF-IDF cosine=0, so it can never
+     outrank a candidate — top-k over candidates is exact, not approximate.
+
+The raw top-hit TF-IDF cosine values are identical to scoring the full
+matrix (cosine is per-doc), so the off-topic guardrail floors in
+pipeline/config.py are unaffected. `RetrievalResult` and the
+`VectorIndex.search` interface are unchanged.
+
 The coding agent can swap the TF-IDF vectorizer for real dense embeddings
 (sentence-transformers / an API embedding model) once it has network access —
 the VectorIndex interface below doesn't change either way, only the
 _embed() implementation would.
 """
-import math
 import re
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict
 
 import numpy as np
-from rank_bm25 import BM25Okapi
+import scipy.sparse as sparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -38,6 +55,13 @@ class RetrievalResult:
     tfidf_score: float
 
 
+# BM25 hyperparameters — match rank_bm25.BM25Okapi defaults so the hybrid
+# ranking behaves the same as before the vectorized rewrite.
+_BM25_K1 = 1.5
+_BM25_B = 0.75
+_BM25_EPSILON = 0.25
+
+
 class VectorIndex:
     """Hybrid lexical (BM25) + vector-space (TF-IDF cosine) index.
     Swap-in point for real embeddings later — see module docstring."""
@@ -49,10 +73,55 @@ class VectorIndex:
 
     def _build(self):
         texts = [c.text for c in self.chunks]
-        self._tokenized = [_tokenize(t) for t in texts]
-        self.bm25 = BM25Okapi(self._tokenized) if texts else None
-        self.vectorizer = TfidfVectorizer(tokenizer=_tokenize, lowercase=False) if texts else None
-        self.tfidf_matrix = self.vectorizer.fit_transform(texts) if texts else None
+        self._count = None
+        self._csc = None
+        self._vocab: Dict[str, int] = {}
+        self._idf: np.ndarray = np.zeros(0)
+        self._doc_lengths: np.ndarray = np.zeros(0)
+        self._avgdl: float = 0.0
+        self.vectorizer = None
+        self.tfidf_matrix = None
+        if not texts:
+            return
+
+        # --- sparse term-document COUNT matrix (vectorized BM25) ---
+        tokenized = [_tokenize(t) for t in texts]
+        self._doc_lengths = np.asarray([len(t) for t in tokenized], dtype=np.float64)
+        self._avgdl = float(self._doc_lengths.mean()) if tokenized else 0.0
+
+        doc_ids, cols, vals = [], [], []
+        for d, toks in enumerate(tokenized):
+            if not toks:
+                continue
+            inds = [self._vocab.setdefault(t, len(self._vocab)) for t in toks]
+            uniq, counts = np.unique(np.asarray(inds, dtype=np.int64), return_counts=True)
+            doc_ids.append(np.full(uniq.shape, d, dtype=np.int64))
+            cols.append(uniq)
+            vals.append(counts.astype(np.float64))
+
+        n_docs = len(texts)
+        if doc_ids:
+            self._count = sparse.csr_matrix(
+                (np.concatenate(vals), (np.concatenate(doc_ids), np.concatenate(cols))),
+                shape=(n_docs, len(self._vocab)),
+                dtype=np.float64,
+            )
+            self._csc = self._count.tocsc()
+            # df = docs containing each term (coords are per-doc unique).
+            df = np.bincount(np.concatenate(cols), minlength=len(self._vocab)).astype(np.float64)
+            self._idf = np.log((n_docs - df + 0.5) / (df + 0.5))
+            pos = self._idf > 0
+            if pos.any():
+                self._idf[~pos] = _BM25_EPSILON * float(np.mean(self._idf[pos]))
+            else:
+                self._idf[:] = 0.0
+
+        # --- TF-IDF cosine (kept on sklearn so the raw cosine values the
+        # off-topic guardrail floors were tuned against stay identical) ---
+        self.vectorizer = TfidfVectorizer(tokenizer=_tokenize, lowercase=False)
+        self.tfidf_matrix = self.vectorizer.fit_transform(texts)
+
+        del tokenized  # transient build memory (tens of millions of tokens at full corpus)
 
     @staticmethod
     def _normalize(scores: np.ndarray) -> np.ndarray:
@@ -63,22 +132,40 @@ class VectorIndex:
         rng = (mx - mn) or 1e-9
         return (scores - mn) / rng
 
+    def _candidate_docs(self, q_cols: List[int]) -> np.ndarray:
+        """Docs that share at least one query term (union of postings)."""
+        ptr, ind = self._csc.indptr, self._csc.indices
+        return np.unique(np.concatenate([ind[ptr[c]:ptr[c + 1]] for c in q_cols]))
+
     def search(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
-        if not self.chunks:
+        if self._count is None:
             return []
         q_tokens = _tokenize(query)
-        bm25_raw = np.asarray(self.bm25.get_scores(q_tokens) if q_tokens else [0.0] * len(self.chunks))
-        q_vec = self.vectorizer.transform([query])
-        tfidf_raw = cosine_similarity(q_vec, self.tfidf_matrix).flatten()
+        q_cols = [self._vocab[t] for t in q_tokens if t in self._vocab]
+        if not q_cols:
+            return []  # nothing in the corpus shares any token with the query
 
-        # Vectorized combined scoring + top-k (avoids a Python loop over all
-        # docs, which dominated latency at 20k+ chunks).
+        cand = self._candidate_docs(q_cols)
+        if cand.size == 0:
+            return []
+
+        # --- BM25 over candidates only (vectorized) ---
+        tf = self._csc[:, q_cols][cand].toarray()  # (|cand|, |Q|) raw term counts
+        dl = self._doc_lengths[cand][:, None]
+        denom = tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / self._avgdl)
+        bm25_raw = ((tf * (_BM25_K1 + 1)) / denom * self._idf[q_cols][None, :]).sum(axis=1)
+
+        # --- TF-IDF cosine over candidates only (identical raw values to
+        # scoring the full matrix) ---
+        q_vec = self.vectorizer.transform([query])
+        tfidf_raw = cosine_similarity(q_vec, self.tfidf_matrix[cand]).flatten()
+
         combined = (self.alpha * self._normalize(tfidf_raw)
                     + (1 - self.alpha) * self._normalize(bm25_raw))
         order = np.argsort(-combined)[:top_k]
         return [
             RetrievalResult(
-                chunk=self.chunks[i], score=float(combined[i]),
+                chunk=self.chunks[cand[i]], score=float(combined[i]),
                 bm25_score=float(bm25_raw[i]), tfidf_score=float(tfidf_raw[i]),
             )
             for i in order

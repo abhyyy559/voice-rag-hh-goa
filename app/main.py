@@ -25,13 +25,18 @@ from pydantic import BaseModel
 from pipeline.config import PipelineConfig
 from pipeline.harness import VoiceRAGHarness, Status
 from pipeline.stt import resolve_stt_provider
+from pipeline.generation import resolve_generation_provider
 from data.load_dataset import load_dataset_with_fallback
 
 app = FastAPI(title="Voice RAG — HH Goa Task 2")
 
 _cfg = PipelineConfig()
-_corpus_limit = int(os.getenv("CORPUS_LIMIT", "2000"))
-_corpus = load_dataset_with_fallback(prefer_real=True, limit=_corpus_limit)
+# CORPUS_LIMIT caps the index size (0 = load the COMPLETE dataset, the full
+# 97,941-record Hindi validation parquet). The deployed Vercel app MUST set
+# a cap (e.g. 2000) — building the full ~1M-chunk index there OOMs/timeouts
+# on serverless. See NEEDS_HUMAN.md.
+_corpus_limit = int(os.getenv("CORPUS_LIMIT", "0") or "0")
+_corpus = load_dataset_with_fallback(prefer_real=True, limit=_corpus_limit or None)
 _harness = VoiceRAGHarness.from_corpus(_corpus, _cfg)
 _stt_provider = resolve_stt_provider(_cfg.stt)
 
@@ -71,7 +76,8 @@ def health():
         "corpus_records": len(_corpus),
         "corpus_chunks": len(_harness.chunks),
         "stt_provider": _stt_provider,
-        "generation": "blocked (set ANTHROPIC_API_KEY)" if not os.getenv("ANTHROPIC_API_KEY") else "ready",
+        "generation_provider": resolve_generation_provider(_cfg.generation) or "blocked",
+        "generation": "ready" if resolve_generation_provider(_cfg.generation) else "blocked (set GROQ_API_KEY or ANTHROPIC_API_KEY)",
     }
 
 

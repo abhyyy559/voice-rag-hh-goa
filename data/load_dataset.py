@@ -23,7 +23,7 @@ runnable, even offline.
 """
 import json
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 SAMPLE_PATH = os.path.join(os.path.dirname(__file__), "sample_data.json")
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
@@ -88,10 +88,15 @@ def _rows_to_records(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return records
 
 
-def load_real_dataset(split: str = "validation", limit: int = 2000,
+def load_real_dataset(split: str = "validation", limit: Optional[int] = None,
                       language: str = "hi") -> List[Dict[str, Any]]:
     """
     Loads real data from ai4bharat/MSMARCO-XI (Hindi by default).
+
+    `limit` is the max number of records to load; None (or 0) loads the
+    COMPLETE dataset — the full 97,941-record Hindi validation parquet in
+    data/cache/hinval.parquet. Set a cap (e.g. 2000) to bound index build
+    time/RAM, as the deployed Vercel app must.
 
     Order of attempts:
       1. Local parquet cache (data/cache/<lang><split>.parquet) — fast,
@@ -131,7 +136,7 @@ def load_real_dataset(split: str = "validation", limit: int = 2000,
                     _LANG_FILE_PREFIX.get(language, language)):
                 continue  # merged default config: keep only this language
             rows.append(row)
-            if len(rows) >= limit:
+            if limit and len(rows) >= limit:
                 break
         if not rows:
             raise RuntimeError(f"no rows returned for {language}/{split}")
@@ -144,7 +149,7 @@ def load_real_dataset(split: str = "validation", limit: int = 2000,
         ) from e
 
 
-def _load_from_parquet(path: str, limit: int) -> List[Dict[str, Any]]:
+def _load_from_parquet(path: str, limit: Optional[int]) -> List[Dict[str, Any]]:
     import pyarrow.parquet as pq
 
     pf = pq.ParquetFile(path)
@@ -155,12 +160,14 @@ def _load_from_parquet(path: str, limit: int) -> List[Dict[str, Any]]:
         "passages.is_selected.list.element",
         "query", "Answer", "query_id", "query_type",
     ]
-    table = pf.read_row_group(0, columns=cols).slice(0, limit)
+    table = pf.read_row_group(0, columns=cols)
+    if limit:
+        table = table.slice(0, limit)
     py_rows = table.to_pylist()
     return _rows_to_records(py_rows)
 
 
-def load_dataset_with_fallback(prefer_real: bool = True, limit: int = 2000) -> List[Dict[str, Any]]:
+def load_dataset_with_fallback(prefer_real: bool = True, limit: Optional[int] = None) -> List[Dict[str, Any]]:
     if prefer_real:
         try:
             return load_real_dataset(limit=limit)

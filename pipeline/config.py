@@ -9,10 +9,17 @@ from dataclasses import dataclass, field
 
 @dataclass
 class STTConfig:
-    # "auto" -> Sarvam when SARVAM_API_KEY is set, else local Whisper fallback
-    # (keeps the demo functional without a key). Other values: "sarvam" |
-    # "whisper" | "elevenlabs".
+    # "auto" -> Sarvam STT when SARVAM_API_KEY is set (task-spec compliant,
+    # Indic-focused), else Groq Whisper (free tier, hosted, works on
+    # serverless), else local Whisper fallback. Other values: "sarvam" |
+    # "groq" | "whisper" | "elevenlabs".
     provider: str = "auto"
+    # Groq's OpenAI-compatible Whisper endpoint — reuses GROQ_API_KEY (same
+    # key as generation, no separate account). Verified live Aug 2026.
+    # Kept as fallback when no Sarvam key is available.
+    groq_api_key: str = field(default_factory=lambda: os.getenv("GROQ_API_KEY", ""))
+    groq_stt_endpoint: str = "https://api.groq.com/openai/v1/audio/transcriptions"
+    groq_stt_model: str = "whisper-large-v3-turbo"  # v3-turbo: best price/perf; whisper-large-v3 for max accuracy
     sarvam_api_key: str = field(default_factory=lambda: os.getenv("SARVAM_API_KEY", ""))
     sarvam_endpoint: str = "https://api.sarvam.ai/speech-to-text"
     sarvam_model: str = "saaras:v3"   # current Sarvam STT model (verified against live docs)
@@ -47,9 +54,23 @@ class RetrievalConfig:
 
 @dataclass
 class GenerationConfig:
+    # "auto" -> Groq when GROQ_API_KEY is set, else Anthropic when
+    # ANTHROPIC_API_KEY is set, else a fast-fail GenerationError. Other
+    # values: "groq" | "anthropic" (mirrors the STT provider pattern).
+    provider: str = "auto"
+    # --- Anthropic ---
     model: str = "claude-sonnet-4-6"
-    max_tokens: int = 512
     api_url: str = "https://api.anthropic.com/v1/messages"
+    anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
+    # --- Groq (OpenAI-compatible chat completions) ---
+    groq_api_key: str = field(default_factory=lambda: os.getenv("GROQ_API_KEY", ""))
+    groq_endpoint: str = "https://api.groq.com/openai/v1/chat/completions"
+    # Fastest model in Groq's CURRENT catalog (Aug 2026) — the llama models
+    # (llama-3.3-70b-versatile / 3.1-8b-instant) were removed from the API
+    # (404) and measured gpt-oss-20b < gpt-oss-120b < qwen3.6-27b (qwen also
+    # wastes tokens on <think> blocks unless reasoning is disabled).
+    groq_model: str = "openai/gpt-oss-20b"
+    max_tokens: int = 512
     timeout_s: float = 15.0
     max_retries: int = 2
     use_mock: bool = False  # dev/testing only — see generation.generate_answer_mock(). Must be False for submission runs.

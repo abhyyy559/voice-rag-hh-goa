@@ -144,8 +144,9 @@ class VoiceRAGHarness:
             )
         except GenerationError as e:
             total_ms = (time.perf_counter() - t_start) * 1000
-            return PipelineResult(status=Status.ERROR, query_text=query, timings=timings,
-                                   total_ms=total_ms, error=f"generation failed after retries: {e}")
+            return PipelineResult(status=Status.ERROR, query_text=query, retrieved=results,
+                                   timings=timings, total_ms=total_ms,
+                                   error=f"generation failed after retries: {e}")
         except Exception as e:  # last-resort error recovery — never let the harness crash the caller
             total_ms = (time.perf_counter() - t_start) * 1000
             return PipelineResult(status=Status.ERROR, query_text=query, timings=timings,

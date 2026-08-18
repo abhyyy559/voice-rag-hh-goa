@@ -2,21 +2,19 @@
 Speech-to-text stage.
 
 Providers (config.py -> STTConfig.provider):
-  - "sarvam"    : Sarvam AI REST API (Indic-focused, fits MSMARCO-XI).
-                  Request/response shape VERIFIED against live docs
-                  (https://docs.sarvam.ai/api-reference/speech-to-text/transcribe)
-                  and a live unauthenticated probe (Aug 2026): endpoint
-                  POST https://api.sarvam.ai/speech-to-text, header
-                  api-subscription-key, multipart fields file/language_code/
-                  model/mode; response {request_id, transcript, language_code}.
-                  Current model is saaras:v3 (saarika:v2 is no longer listed).
-  - "whisper"   : local faster-whisper (no API key, fully offline). Uses a
-                  cached HF model if present. Useful for demo/dev runs when no
-                  key is available; NOT the configured production path.
-  - "elevenlabs": stub kept so the provider remains a one-line config swap.
-  - "auto"      : (default) Sarvam when SARVAM_API_KEY is set, else local
-                  Whisper — keeps the pipeline functional without a key while
-                  preferring the production provider.
+  - "sarvam"    : Sarvam AI REST API (Indic-focused) — PRIMARY per task spec.
+                  Endpoint POST https://api.sarvam.ai/speech-to-text, header
+                  api-subscription-key, multipart file/language_code/model
+                  (saaras:v3)/mode, response {transcript}.
+                  Requires SARVAM_API_KEY.
+  - "groq"      : Groq's OpenAI-compatible Whisper endpoint (whisper-large-v3
+                  / v3-turbo) — FALLBACK. Reuses GROQ_API_KEY (same key as
+                  generation), free tier, hosted. VERIFIED live Aug 2026.
+  - "whisper"   : local faster-whisper (no API key, fully offline). Zero-key
+                  fallback for dev runs.
+  - "elevenlabs": ElevenLabs Scribe v1. One-line config swap.
+  - "auto"      : (default) Sarvam when SARVAM_API_KEY is set, else Groq when
+                  GROQ_API_KEY is set, else local Whisper.
 """
 import io
 import os
@@ -41,7 +39,11 @@ class TranscriptionResult:
 
 def resolve_stt_provider(cfg: STTConfig) -> str:
     if cfg.provider == "auto":
-        return "sarvam" if cfg.sarvam_api_key else "whisper"
+        if cfg.sarvam_api_key:
+            return "sarvam"
+        if cfg.groq_api_key:
+            return "groq"
+        return "whisper"
     return cfg.provider
 
 
@@ -135,6 +137,60 @@ def transcribe_whisper(audio_bytes: bytes, filename: str, cfg: STTConfig) -> Tra
                                provider="whisper", raw_response={"model": model_ref, "lang": lang})
 
 
+class RateLimitedSTTError(STTError):
+    """STT API returned 429 (rate limit) — retry with a longer backoff."""
+
+    def __init__(self, message: str, retry_after: float = 0.0):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+def _stt_wait(retry_state) -> float:
+    exc = retry_state.outcome.exception()
+    if isinstance(exc, RateLimitedSTTError) and exc.retry_after > 0:
+        return max(exc.retry_after, 4.0)
+    return min(2 ** (retry_state.attempt_number - 1), 10.0)
+
+
+@retry(stop=stop_after_attempt(4), wait=_stt_wait,
+       retry=retry_if_exception_type(STTError), reraise=True)
+def _transcribe_groq_once(audio_bytes: bytes, filename: str, cfg: STTConfig) -> TranscriptionResult:
+    """Groq Whisper transcription (OpenAI-compatible). Language is ISO-639-1
+    ("hi"), derived from the config's "hi-IN"."""
+    lang = cfg.language_code.split("-")[0].lower() or "hi"
+    try:
+        resp = requests.post(
+            cfg.groq_stt_endpoint,
+            headers={"Authorization": f"Bearer {cfg.groq_api_key}"},
+            files={"file": (filename, audio_bytes, "audio/wav")},
+            data={"model": cfg.groq_stt_model, "language": lang, "response_format": "json"},
+            timeout=cfg.timeout_s,
+        )
+        if resp.status_code == 429:
+            retry_after = float(resp.headers.get("Retry-After", "0") or 0)
+            raise RateLimitedSTTError(f"Groq STT rate limit (429), retry after {retry_after}s",
+                                      retry_after=retry_after)
+        if resp.status_code in (401, 403):
+            raise STTError(f"Groq STT auth failed ({resp.status_code}) — check GROQ_API_KEY")
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException as e:
+        raise STTError(str(e)) from e
+
+    text = (data.get("text") or "").strip()
+    if not text:
+        raise STTError(f"empty transcript from Groq STT (raw: {str(data)[:200]})")
+    return TranscriptionResult(text=text, language_code=lang, provider="groq", raw_response=data)
+
+
+def transcribe_groq(audio_bytes: bytes, filename: str, cfg: STTConfig) -> TranscriptionResult:
+    """Key check outside the retried call: a missing key fails fast instead
+    of burning 4 retries with backoff."""
+    if not cfg.groq_api_key:
+        raise STTError("GROQ_API_KEY not set")
+    return _transcribe_groq_once(audio_bytes, filename, cfg)
+
+
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, max=4),
        retry=retry_if_exception_type(STTError), reraise=True)
 def transcribe_elevenlabs(audio_bytes: bytes, filename: str, cfg: STTConfig) -> TranscriptionResult:
@@ -161,10 +217,12 @@ def transcribe_elevenlabs(audio_bytes: bytes, filename: str, cfg: STTConfig) -> 
 
 def transcribe(audio_bytes: bytes, filename: str, cfg: STTConfig) -> TranscriptionResult:
     provider = resolve_stt_provider(cfg)
-    if provider == "sarvam":
-        return transcribe_sarvam(audio_bytes, filename, cfg)
+    if provider == "groq":
+        return transcribe_groq(audio_bytes, filename, cfg)
     elif provider == "whisper":
         return transcribe_whisper(audio_bytes, filename, cfg)
+    elif provider == "sarvam":
+        return transcribe_sarvam(audio_bytes, filename, cfg)
     elif provider == "elevenlabs":
         return transcribe_elevenlabs(audio_bytes, filename, cfg)
     raise ValueError(f"unknown STT provider: {provider}")
