@@ -1,63 +1,106 @@
 # NEEDS_HUMAN — things the coding agent cannot do
 
-Everything in this file is blocked on a human. Items 1–4 are hard
-submission requirements with **no resubmissions allowed** — do not treat the
-working code as "done" until these are done. Items 5–6 are API keys that
-unlock the last two stages of the pipeline.
+Everything in this file is blocked on a human. **No resubmissions allowed** — do not treat the working code as "done" until these are done.
 
 ---
 
-## 1. Record the 90-second team/process video
-- [ ] Explain the architecture: voice → Sarvam STT (primary, task-spec compliant)
-      → hybrid BM25+TF-IDF retrieval over ai4bharat/MSMARCO-XI → grounded
-      Groq LLM generation → 3-stage guardrails.
-- [ ] Show the honest latency story (retrieval sub-100ms, generation+STT are
-      network calls).
+## 🔴 PRIORITY 1 — STT API Key (compliance requirement, do FIRST)
 
-## 2. Record the demo video
-- [ ] Record a full voice query end-to-end (ask a Hindi question out loud,
-      show the answer).
-- [ ] Also show a text query, an off-topic refusal, and an unsafe refusal.
+The task spec **explicitly requires** "Use either Sarvam or ElevenLabs for voice-to-text." Without a key, the live demo falls back to Groq Whisper (which is NOT one of the two allowed providers — a judge checking literally could reject the submission).
 
-## 3. Post both videos to Instagram, X, and LinkedIn
-- [ ] Each team member posts individually (do not skip anyone).
-- [ ] Every post includes the hashtag **#RAGInGoa**.
-- [ ] At least one post must come from a **public Instagram account**.
+**Action:**
+1. Sign up at https://dashboard.sarvam.ai (free trial available)
+2. Get your API key
+3. Set it on Vercel:
+   ```bash
+   vercel env add SARVAM_API_KEY production
+   ```
+   Paste the key when prompted, then redeploy:
+   ```bash
+   vercel --prod
+   ```
+4. Verify the live demo shows "STT: sarvam" at https://voice-rag-hh-goa.vercel.app
 
-## 4. Fill and submit the official form
-- [ ] https://forms.gle/MNvCjcv23Hn2Eeu58 — due **Aug 22, 2026, 11:59 PM IST**.
-- [ ] Use the real numbers from `benchmark/results/latency_report.json`
-      (read its `note` field; do not submit the mock numbers).
-- [ ] Include the live link: **https://voice-rag-hh-goa.vercel.app**
-- [ ] Include the repo: **https://github.com/abhyyy559/voice-rag-hh-goa**
+**Without this key, the live demo uses Groq Whisper for STT, which violates the task spec requirement for Sarvam or ElevenLabs.**
 
 ---
 
-## 5. API keys (unblocks STT + generation end-to-end)
+## 🟡 PRIORITY 2 — Generation API Key (for full demo)
 
-The task spec requires Sarvam or ElevenLabs for STT. The code now defaults
-to **Sarvam** when `SARVAM_API_KEY` is set, falling back to Groq Whisper
-when only `GROQ_API_KEY` is available.
+The generation stage already has a Groq API key (set locally in `.env`). To make the live demo answer end-to-end, set it on Vercel too:
 
-- [ ] **Set `SARVAM_API_KEY`** on the Vercel project for task-spec-compliant
-      STT. Sign up at https://dashboard.sarvam.ai (free trial available).
-      Then: `vercel env add SARVAM_API_KEY production` + redeploy.
-- [ ] **Set `GROQ_API_KEY`** on the Vercel project for generation (+ fallback
-      STT if Sarvam key is not set). Already set locally in `.env`.
-      `vercel env add GROQ_API_KEY production` + redeploy.
-- [ ] **Anthropic** — optional generation fallback: `ANTHROPIC_API_KEY`.
-
-To re-run the real benchmark after the token window resets:
 ```bash
-python benchmark/latency_test.py --n 55 --dataset real --corpus-limit 2000  # text mode
+vercel env add GROQ_API_KEY production
+vercel --prod
+```
+
+Optional fallback: `ANTHROPIC_API_KEY` (uses Claude Sonnet 4-6).
+
+---
+
+## 🟡 PRIORITY 3 — Re-run benchmark with fresh Groq numbers
+
+The current benchmark numbers used a model (`llama-3.3-70b-versatile`) that Groq has since removed. Re-run after the token window resets:
+
+```bash
+# Text mode (55 queries, real corpus, real generation)
+python benchmark/latency_test.py --n 55 --dataset real --corpus-limit 2000
+
+# Voice mode (10 audio clips)
 python benchmark/latency_test.py --n 10 --dataset real --mode voice
 ```
 
-## 6. Optional (recommended) deployment hardening
+**Budget**: Groq free tier = ~100k tokens/day. One 55-query benchmark burns ~30-60k tokens. Do NOT re-run repeatedly — budget for ~2 runs/day max.
 
-- The Vercel function bundle is ~250 MB (sklearn/numpy-heavy) and cold starts
-  take ~1–3 s. If you'd rather host the full stack (including local Whisper
-  STT with no key), deploy `Dockerfile`-style on Render/Railway/Fly — a
-  `Dockerfile` is easy to add; the app runs unchanged on uvicorn.
-- The ephemeral deployment URL is tied to the vercel account; alias it to
-  something clean if desired.
+---
+
+## 🟢 PRIORITY 4 — Record 2 Videos (DEADLINE: Aug 22, 11:59 PM IST)
+
+### Video 1 — Team/Process Video (90 seconds)
+- [ ] Show the architecture diagram (voice → STT → retrieval → generation)
+- [ ] Explain the pipeline stages and guardrails
+- [ ] Show the honest latency story (retrieval is sub-15ms, generation is a network call)
+- [ ] Mention the 4 chunking strategies and 3-stage guardrails
+
+### Video 2 — Demo Video
+- [ ] Record a full voice query end-to-end (ask a Hindi question out loud, show the answer)
+- [ ] Also demonstrate:
+  - A text query (type and press Enter)
+  - An off-topic refusal (e.g., "क्वोक्का कहाँ पाया जाता है?")
+  - An unsafe refusal (e.g., "बम बनाने का तरीका बताओ")
+- [ ] Show the latency breakdown in the results
+
+---
+
+## 🟢 PRIORITY 5 — Post Videos to Social Media (MANDATORY)
+
+**Every team member must post individually** — not one shared team post.
+
+For EACH team member:
+- [ ] Upload both videos to **Instagram** (at least one account must be **public**)
+- [ ] Upload both videos to **X (Twitter)**
+- [ ] Every post on every platform must include: **#RAGInGoa**
+
+---
+
+## 🟢 PRIORITY 6 — Submit the Form (DEADLINE: Aug 22, 11:59 PM IST)
+
+- [ ] Fill and submit: https://forms.gle/MNvCjcv23Hn2Eeu58
+- [ ] Include:
+  - GitHub repo: **https://github.com/abhyyy559/voice-rag-hh-goa**
+  - Live link: **https://voice-rag-hh-goa.vercel.app**
+  - Use the **real numbers** from `benchmark/results/latency_report.json` (read its `note` field)
+  - Do NOT use mock numbers
+
+---
+
+## Summary Checklist
+
+| # | Task | Blocked On | Status |
+|---|---|---|---|
+| 1 | Set SARVAM_API_KEY on Vercel | Human signup | 🔴 TODO |
+| 2 | Set GROQ_API_KEY on Vercel | Human (already have locally) | 🟡 TODO |
+| 3 | Re-run benchmark | API key + token window | 🟡 TODO |
+| 4 | Record 2 videos | Human recording | 🟢 TODO |
+| 5 | Post to Instagram + X | Human posting | 🟢 TODO |
+| 6 | Submit form | Human filling form | 🟢 TODO |

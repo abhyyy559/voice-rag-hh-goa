@@ -31,7 +31,8 @@
 <body>
 <div class="wrap">
   <h1>Voice RAG — HH Goa Task 2</h1>
-  <div class="sub">Speak or type a question. Pipeline: STT (Groq Whisper) → hybrid BM25/TF-IDF retrieval → guarded Groq LLM generation.</div>
+  <div class="sub">Speak or type a question. Pipeline: STT → hybrid BM25/TF-IDF retrieval → guarded LLM generation.</div>
+  <div id="healthInfo" class="meta" style="margin-bottom:16px;"></div>
 
   <div class="card">
     <div class="row">
@@ -52,6 +53,12 @@
 </div>
 
 <script>
+// Fetch health info on load to show compliance status
+fetch('/api/health').then(r => r.json()).then(d => {
+  const h = document.getElementById('healthInfo');
+  h.textContent = `STT: ${d.stt_provider} | Generation: ${d.generation_provider} | Corpus: ${d.corpus_records} records / ${d.corpus_chunks} chunks`;
+}).catch(() => {});
+
 const recBtn = document.getElementById('recBtn');
 const recStatus = document.getElementById('recStatus');
 const textInput = document.getElementById('textInput');
