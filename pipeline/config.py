@@ -54,9 +54,15 @@ class RetrievalConfig:
 
 @dataclass
 class GenerationConfig:
-    # "auto" -> Groq when GROQ_API_KEY is set, else Anthropic when
-    # ANTHROPIC_API_KEY is set, else a fast-fail GenerationError. Other
-    # values: "groq" | "anthropic" (mirrors the STT provider pattern).
+    # Answer mode: "fast" = deterministic extractive synthesis (sub-ms, no
+    # network — keeps the RAG path under the 200ms target); "deep" = LLM via
+    # the provider below. Per-request override comes from the API/UI.
+    default_mode: str = "fast"            # "fast" | "deep"
+    extractive_max_sentences: int = 3
+    # DEEP (LLM) provider config. "auto" -> Groq when GROQ_API_KEY is set,
+    # else Anthropic when ANTHROPIC_API_KEY is set, else deep mode is
+    # unavailable (fast mode still works — it needs no key).
+    # Other values: "groq" | "anthropic" (mirrors the STT provider pattern).
     provider: str = "auto"
     # --- Anthropic ---
     model: str = "claude-sonnet-4-6"

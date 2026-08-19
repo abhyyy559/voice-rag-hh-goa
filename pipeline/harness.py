@@ -28,7 +28,9 @@ from .config import PipelineConfig
 from .chunking import STRATEGIES, Chunk
 from .retrieval import VectorIndex, RetrievalResult
 from .guardrails import check_unsafe_input, check_off_topic, check_grounding, GuardrailVerdict
-from .generation import generate_answer, generate_answer_mock, GenerationError
+from .generation import (
+    generate_answer, generate_answer_mock, generate_answer_extractive, GenerationError,
+)
 from .stt import transcribe, STTError, TranscriptionResult
 
 _TOKEN_RE = re.compile(r"[a-zA-Z\u0900-\u097F]+")
@@ -107,10 +109,14 @@ class VoiceRAGHarness:
         ms = (time.perf_counter() - t0) * 1000
         return result, StageTiming(stage=stage, ms=ms)
 
-    def run_text_query(self, query: str) -> PipelineResult:
+    def run_text_query(self, query: str, mode: Optional[str] = None) -> PipelineResult:
         """Runs retrieval -> guardrails -> generation for an already-transcribed
         query. Used directly by text-mode tests/benchmarks, and internally
-        by run_voice_query after STT."""
+        by run_voice_query after STT.
+
+        mode: "fast" (extractive, sub-ms, default from config) or "deep"
+        (LLM via Groq/Anthropic)."""
+        mode = mode or self.cfg.generation.default_mode
         timings: List[StageTiming] = []
         t_start = time.perf_counter()
 
@@ -128,8 +134,13 @@ class VoiceRAGHarness:
             if not verdict.passed:
                 return self._refuse(query, verdict, timings, t_start, retrieved=results)
 
-            gen_fn = generate_answer_mock if self.cfg.generation.use_mock else generate_answer
-            gen_result, t = self._timed("generation", gen_fn, query, results, self.cfg.generation)
+            if self.cfg.generation.use_mock:
+                gen_fn = generate_answer_mock
+            elif mode == "fast":
+                gen_fn = generate_answer_extractive
+            else:
+                gen_fn = generate_answer
+            gen_result, t = self._timed(f"generation[{mode}]", gen_fn, query, results, self.cfg.generation)
             timings.append(t)
 
             verdict, t = self._timed("guardrail_grounding", check_grounding, gen_result.answer, results, self.cfg.guardrails)
@@ -152,7 +163,8 @@ class VoiceRAGHarness:
             return PipelineResult(status=Status.ERROR, query_text=query, timings=timings,
                                    total_ms=total_ms, error=f"unexpected pipeline error: {e}")
 
-    def run_voice_query(self, audio_bytes: bytes, filename: str = "query.wav") -> PipelineResult:
+    def run_voice_query(self, audio_bytes: bytes, filename: str = "query.wav",
+                        mode: Optional[str] = None) -> PipelineResult:
         t_start = time.perf_counter()
         timings: List[StageTiming] = []
         try:
@@ -163,7 +175,7 @@ class VoiceRAGHarness:
             return PipelineResult(status=Status.ERROR, timings=timings, total_ms=total_ms,
                                    error=f"STT failed after retries: {e}")
 
-        result = self.run_text_query(stt_result.text)
+        result = self.run_text_query(stt_result.text, mode=mode)
         result.timings = timings + result.timings
         result.total_ms = (time.perf_counter() - t_start) * 1000
         return result
