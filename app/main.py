@@ -17,6 +17,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from dotenv import load_dotenv
+load_dotenv()  # Load .env before any PipelineConfig reads os.getenv()
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -46,19 +49,27 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 class TextQuery(BaseModel):
     query: str
+    mode: str = "fast"  # "fast" = extractive (sub-ms) | "deep" = LLM (Groq/Anthropic)
 
 
-def _serialize(result) -> dict:
+def _serialize(result, mode: str = "fast") -> dict:
     return {
         "status": result.status.value,
         "query_text": result.query_text,
         "answer": result.answer,
         "refusal_reason": result.refusal_reason,
         "error": result.error,
+        "mode": mode,
         "total_ms": round(result.total_ms, 2),
         "timings": result.timing_breakdown(),
         "retrieved_sources": [
-            {"chunk_id": r.chunk.chunk_id, "score": round(r.score, 4), "text": r.chunk.text[:200]}
+            {
+                "chunk_id": r.chunk.chunk_id,
+                "score": round(r.score, 4),
+                "bm25_score": round(r.bm25_score, 4),
+                "tfidf_score": round(r.tfidf_score, 4),
+                "text": r.chunk.text[:500],
+            }
             for r in result.retrieved
         ],
     }
@@ -77,6 +88,8 @@ def health():
         "corpus_chunks": len(_harness.chunks),
         "stt_provider": _stt_provider,
         "generation_provider": resolve_generation_provider(_cfg.generation) or "blocked",
+        "deep_ready": bool(resolve_generation_provider(_cfg.generation)),
+        "default_mode": _cfg.generation.default_mode,
         "generation": "ready" if resolve_generation_provider(_cfg.generation) else "blocked (set GROQ_API_KEY or ANTHROPIC_API_KEY)",
     }
 
@@ -85,14 +98,20 @@ def health():
 def query_text(payload: TextQuery):
     if not payload.query.strip():
         raise HTTPException(400, "empty query")
-    result = _harness.run_text_query(payload.query)
-    return _serialize(result)
+    mode = payload.mode if payload.mode in ("fast", "deep") else "fast"
+    if mode == "deep" and not resolve_generation_provider(_cfg.generation):
+        raise HTTPException(503, "deep mode unavailable — no GROQ_API_KEY or ANTHROPIC_API_KEY set")
+    result = _harness.run_text_query(payload.query, mode=mode)
+    return _serialize(result, mode)
 
 
 @app.post("/api/query/voice")
-async def query_voice(file: UploadFile = File(...)):
+async def query_voice(file: UploadFile = File(...), mode: str = "fast"):
     audio_bytes = await file.read()
     if not audio_bytes:
         raise HTTPException(400, "empty audio file")
-    result = _harness.run_voice_query(audio_bytes, filename=file.filename or "query.wav")
-    return _serialize(result)
+    mode = mode if mode in ("fast", "deep") else "fast"
+    if mode == "deep" and not resolve_generation_provider(_cfg.generation):
+        raise HTTPException(503, "deep mode unavailable — no GROQ_API_KEY or ANTHROPIC_API_KEY set")
+    result = _harness.run_voice_query(audio_bytes, filename=file.filename or "query.wav", mode=mode)
+    return _serialize(result, mode)

@@ -32,6 +32,9 @@ from statistics import mean
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from dotenv import load_dotenv
+load_dotenv()  # Load .env so GROQ_API_KEY etc. are available
+
 from pipeline.config import PipelineConfig
 from pipeline.harness import VoiceRAGHarness, Status
 from pipeline.stt import resolve_stt_provider
