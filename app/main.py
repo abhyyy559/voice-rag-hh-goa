@@ -42,6 +42,8 @@ _corpus_limit = int(os.getenv("CORPUS_LIMIT", "500") or "500")
 # others are built on-demand the first time they're requested.
 import time as _time
 import threading as _threading
+import gzip as _gzip
+import pickle as _pickle
 
 t_start_init = _time.perf_counter()
 _harnesses: dict[str, VoiceRAGHarness] = {}
@@ -50,6 +52,34 @@ _language_locks: dict[str, _threading.Lock] = {}
 _language_loading: dict[str, bool] = {}
 
 # --- Load ONLY the default language at startup for fast cold start ---
+def _prebuilt_path(lang_code: str) -> str:
+    """Committed, deployment-ready pickled harness (data/prebuilt/ is NOT
+    vercelignored). gzip-compressed pickle loads in ~0.3s vs 5-6s to build
+    the index from raw records on a cold lambda."""
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'data', 'prebuilt', f'{lang_code}_harness.pkl.gz')
+
+
+def _load_prebuilt(lang_code: str):
+    path = _prebuilt_path(lang_code)
+    if not os.path.exists(path):
+        return None
+    t0 = _time.perf_counter()
+    with open(path, 'rb') as f:
+        harness = _pickle.loads(_gzip.decompress(f.read()))
+    # Keep the pickled cfg (it carries the corpus-tuned stopwords), but
+    # re-bind secrets from THIS environment: keys were stripped before the
+    # pickle was saved so no secrets ship in git.
+    harness.cfg.generation.groq_api_key = os.getenv("GROQ_API_KEY", "")
+    harness.cfg.generation.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    harness.cfg.stt.sarvam_api_key = os.getenv("SARVAM_API_KEY", "")
+    harness.cfg.stt.groq_api_key = os.getenv("GROQ_API_KEY", "")
+    ms = (_time.perf_counter() - t0) * 1000
+    print(f'[init] Loaded {lang_code} PREBUILT index: {len(harness.chunks)} chunks ({ms:.0f}ms)')
+    return harness
+
+
 def _load_language(lang_code: str) -> None:
     """Build a harness for a single language (thread-safe, idempotent).
     Tries prebuilt cache first for instant startup."""
@@ -62,23 +92,11 @@ def _load_language(lang_code: str) -> None:
         _language_loading[lang_code] = True
         try:
             t0 = _time.perf_counter()
-            # Try prebuilt cache first: load chunks and rebuild index (~200ms)
-            import pickle as _pickle
-            _cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'cache')
-            _prebuilt = os.path.join(_cache_dir, 'prebuilt_harness.pkl')
-            if lang_code == DEFAULT_LANGUAGE and os.path.exists(_prebuilt):
-                with open(_prebuilt, 'rb') as _f:
-                    _cached = _pickle.load(_f)
-                # Rebuild index from cached chunks (fast, ~200ms)
-                harness = VoiceRAGHarness(_cached['chunks'], _cfg)
-                harness.cfg.guardrails.stopwords = _cached.get('stopwords', frozenset())
-                _harnesses[lang_code] = harness
-                _language_stats[lang_code] = {
-                    'records': 0,
-                    'chunks': len(harness.chunks),
-                }
-                ms = (_time.perf_counter() - t0) * 1000
-                print(f'[init] Loaded {lang_code} from CACHE: {len(harness.chunks)} chunks ({ms:.0f}ms)')
+            # Fastest path: committed prebuilt index (deployed lambdas).
+            prebuilt = _load_prebuilt(lang_code)
+            if prebuilt is not None:
+                _harnesses[lang_code] = prebuilt
+                _language_stats[lang_code] = {'records': 0, 'chunks': len(prebuilt.chunks)}
                 return
             corpus = load_dataset_with_fallback(
                 prefer_real=True, limit=_corpus_limit or None, language=lang_code

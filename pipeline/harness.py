@@ -105,7 +105,11 @@ def _check_topic_relevance(query: str, results: List[RetrievalResult]) -> float:
     _QUESTION_FOCUS = {
         "capital": ["capital", "city", "seat", "headquarters"],
         "cmf": ["fund", "cmf", "chief minister fund", "scheme", "program"],
+        # NOTE: "cm" here means Chief Minister. Matching must be word-bounded,
+        # otherwise "cm" hits every "1 cm 2" centimeter in math passages.
+        "cm": ["chief", "minister", "cm", "cabinet", "government"],
         "minister": ["minister", "cm", "chief", "government", "cabinet"],
+        "governor": ["governor", "appointed", "state", "office"],
         "population": ["population", "people", "inhabitants", "residents", "census"],
         "area": ["area", "sq", "km", "square", "kilometers", "size"],
         "language": ["language", "languages", "speak", "spoken", "tongue"],
@@ -132,12 +136,20 @@ def _check_topic_relevance(query: str, results: List[RetrievalResult]) -> float:
             if ew.issubset(q_words):
                 query_entity_words |= ew
         _SENT_RE = re.compile(r'[.!?]\s+')
+
+        def _wb(word: str):
+            return re.compile(r"\b" + re.escape(word) + r"\b")
+
+        # Word-boundary patterns: raw substring `in` checks would match "cm"
+        # inside unrelated tokens and "art" inside "particle".
+        focus_pats = [_wb(fw) for fw in focus_words]
+        entity_pats = [_wb(ew) for ew in query_entity_words]
         focus_near_entity = 0
         for r in results[:3]:
             sentences = _SENT_RE.split(r.chunk.text.lower())
             for sent in sentences:
-                has_entity = any(ew in sent for ew in query_entity_words)
-                has_focus = any(fw in sent for fw in focus_words)
+                has_entity = any(p.search(sent) for p in entity_pats)
+                has_focus = any(p.search(sent) for p in focus_pats)
                 if has_entity and has_focus:
                     focus_near_entity += 1
                     break  # one match per passage is enough
@@ -364,7 +376,7 @@ class VoiceRAGHarness:
             if rel_score <= 0.45:
                 return self._refuse(query,
                     GuardrailVerdict(passed=False,
-                        reason=f"topic relevance {rel_score:.2f} below threshold 0.35 — "
+                        reason=f"topic relevance {rel_score:.2f} below threshold 0.45 — "
                                f"retrieved passages mention query entities but don't address the question",
                         stage="topic_relevance"),
                     timings, t_start, retrieved=results)

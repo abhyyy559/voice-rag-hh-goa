@@ -33,6 +33,12 @@ CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
 # can run against real data without downloading the 440MB parquet.
 BUNDLED_REAL_PATH = os.path.join(os.path.dirname(__file__), "real_corpus.json")
 
+# Bundled ENGLISH slice (2000 records from the parallel English_passages /
+# Eng_Query / Eng_Answer columns of the same parquet). Deployment lambdas
+# have no data/cache/*.parquet (vercelignored), so this file is what makes
+# the default English index load there at all.
+BUNDLED_ENGLISH_PATH = os.path.join(os.path.dirname(__file__), "english_corpus.json")
+
 
 def load_sample_dataset() -> List[Dict[str, Any]]:
     with open(SAMPLE_PATH, "r", encoding="utf-8") as f:
@@ -126,9 +132,16 @@ def load_real_dataset(split: str = "validation", limit: Optional[int] = None,
         hin = os.path.join(CACHE_DIR, "hinval.parquet")
         if os.path.exists(hin):
             return _load_from_parquet(hin, limit, english=True)
+        # Deployment hosts (Vercel lambda): no parquet — use the bundled
+        # English slice instead of failing.
+        if os.path.exists(BUNDLED_ENGLISH_PATH):
+            with open(BUNDLED_ENGLISH_PATH, "r", encoding="utf-8") as f:
+                corpus = json.load(f)
+            return corpus[:limit] if limit else corpus
         raise RuntimeError(
-            "English index needs data/cache/hinval.parquet (the English "
-            "columns live inside the Hindi validation parquet)."
+            "English index needs data/cache/hinval.parquet or "
+            "data/english_corpus.json (the English columns live inside the "
+            "Hindi validation parquet)."
         )
     cache_path = _parquet_cache_path(language, split)
     # Prefer smaller subset parquets when available (faster startup)

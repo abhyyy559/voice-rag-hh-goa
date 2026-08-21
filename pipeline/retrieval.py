@@ -44,6 +44,20 @@ sparse = None
 TfidfVectorizer = None
 
 
+def _ensure_heavy_imports():
+    """Populate the module-level numpy/scipy/sklearn handles (idempotent).
+    Called by _build() and __setstate__() — the lazy-import pattern keeps
+    module import fast but MUST be re-run after unpickling an index."""
+    global np, sparse, TfidfVectorizer
+    if np is None:
+        import numpy
+        import scipy.sparse
+        from sklearn.feature_extraction.text import TfidfVectorizer as _TFV
+        np = numpy
+        sparse = scipy.sparse
+        TfidfVectorizer = _TFV
+
+
 def _tokenize(text: str) -> List[str]:
     # Latin + Devanagari (Hindi) + Telugu + Bengali script ranges
     return re.findall(r"[a-zA-Z\u0900-\u097F\u0980-\u09FF\u0C00-\u0C7F]+", text.lower())
@@ -73,16 +87,20 @@ class VectorIndex:
         self.alpha = 0.3  # Adjusted for better BM25 weighting
         self._build()
 
+    def __setstate__(self, state):
+        """Restore a pickled index. The numpy/scipy/sklearn module globals
+        are populated lazily by _build(), which never runs when an index is
+        UNPICKLED — without this, search() on a restored index crashes with
+        "'NoneType' object has no attribute 'zeros'". Re-import here."""
+        _ensure_heavy_imports()
+        self.__dict__.update(state)
+
+    def _ensure_lazy_imports(self):  # backwards-compat alias
+        _ensure_heavy_imports()
+
     def _build(self):
         # Lazy-import heavy dependencies (numpy, scipy, sklearn)
-        global np, sparse, TfidfVectorizer
-        if np is None:
-            import numpy as _np
-            import scipy.sparse as _sparse
-            from sklearn.feature_extraction.text import TfidfVectorizer as _TfidfVectorizer
-            np = _np
-            sparse = _sparse
-            TfidfVectorizer = _TfidfVectorizer
+        _ensure_heavy_imports()
         texts = [c.text for c in self.chunks]
         self._count = None
         self._csc = None

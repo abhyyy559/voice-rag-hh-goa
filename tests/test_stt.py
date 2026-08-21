@@ -35,11 +35,11 @@ def test_provider_prefers_groq_when_key_set():
     assert resolve_stt_provider(cfg) == "groq"
 
 
-def test_provider_groq_beats_sarvam_in_auto():
-    """With the Groq key set, auto must NOT pick Sarvam even if a Sarvam key
-    also exists (Sarvam has no free tier — Groq is the free default)."""
+def test_provider_sarvam_beats_groq_in_auto():
+    """Task spec REQUIRES Sarvam or ElevenLabs for STT, so when both keys
+    exist auto MUST pick Sarvam (Groq Whisper is only the fallback)."""
     cfg = _cfg(GROQ_API_KEY="g", SARVAM_API_KEY="s")
-    assert resolve_stt_provider(cfg) == "groq"
+    assert resolve_stt_provider(cfg) == "sarvam"
 
 
 def test_provider_pinned_groq_requires_key():
