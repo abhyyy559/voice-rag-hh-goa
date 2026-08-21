@@ -25,7 +25,7 @@ class Chunk:
 def _split_sentences(text: str) -> List[str]:
     # Lightweight sentence splitter — avoids a heavyweight NLP model download,
     # which matters both for the <200ms budget and for offline/sandboxed runs.
-    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    sentences = re.split(r'(?<=[.!?।])\s+', text.strip())
     return [s for s in sentences if s]
 
 

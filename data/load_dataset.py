@@ -23,6 +23,7 @@ runnable, even offline.
 """
 import json
 import os
+import re
 from typing import List, Dict, Any, Optional
 
 SAMPLE_PATH = os.path.join(os.path.dirname(__file__), "sample_data.json")
@@ -55,14 +56,18 @@ def _parquet_cache_path(language: str, split: str) -> str:
     return os.path.join(CACHE_DIR, f"{prefix}{code}.parquet")
 
 
-def _rows_to_records(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _rows_to_records(rows: List[Dict[str, Any]], english: bool = False) -> List[Dict[str, Any]]:
     """Convert raw dataset rows (either from `datasets` or pyarrow) into the
-    harness record shape."""
+    harness record shape. english=True maps the parallel English columns
+    (English_passages / Eng_Query / Eng_Answer) that ship inside every
+    MSMARCO-XI parquet — the dataset was translated FROM English, so the
+    originals are already there."""
     records = []
     for row in rows:
         passages_raw = row.get("passages") or {}
         # Accept both the real XI shape and the generic MS MARCO shape.
-        texts = passages_raw.get("Translated_passages") or passages_raw.get("passage_text")
+        texts = (passages_raw.get("English_passages") if english else None) \
+            or passages_raw.get("Translated_passages") or passages_raw.get("passage_text")
         if texts is None:
             raise KeyError(
                 "Unexpected MSMARCO-XI schema: passages has keys "
@@ -72,15 +77,21 @@ def _rows_to_records(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             )
         selected = passages_raw.get("is_selected") or [0] * len(texts)
         qid = row.get("query_id")
+        if english:
+            # Eng_Query values often carry leading ". " punctuation noise.
+            query = re.sub(r"^[\s.]+", "", (row.get("Eng_Query") or row.get("query") or "")).strip()
+        else:
+            query = row["query"]
         records.append({
             "query_id": qid,
-            "query": row["query"],
-            "answer": row.get("Answer") or row.get("answer"),
+            "query": query,
+            "answer": (row.get("Eng_Answer") or row.get("Answer")) if english
+                      else (row.get("Answer") or row.get("answer")),
             "passages": [
                 {
                     "text": t,
                     "is_selected": int(sel) if sel is not None else 0,
-                    "source": f"{row.get('target_lang', 'hi')}_q{qid}",
+                    "source": f"{'en' if english else row.get('target_lang', 'hi')}_q{qid}",
                 }
                 for t, sel in zip(texts, selected)
             ],
@@ -108,12 +119,30 @@ def load_real_dataset(split: str = "validation", limit: Optional[int] = None,
     Raises if the schema is not the expected MS MARCO-XI shape rather than
     silently returning an empty corpus.
     """
+    if language == "en":
+        # English ships INSIDE the Hindi parquet: every record carries the
+        # parallel English_passages / Eng_Query / Eng_Answer columns (the
+        # dataset was translated from English). No separate download.
+        hin = os.path.join(CACHE_DIR, "hinval.parquet")
+        if os.path.exists(hin):
+            return _load_from_parquet(hin, limit, english=True)
+        raise RuntimeError(
+            "English index needs data/cache/hinval.parquet (the English "
+            "columns live inside the Hindi validation parquet)."
+        )
     cache_path = _parquet_cache_path(language, split)
+    # Prefer smaller subset parquets when available (faster startup)
+    prefix = _LANG_FILE_PREFIX.get(language, language)
+    code = "train" if split == "train" else "val"
+    subset_path = os.path.join(CACHE_DIR, f"{prefix}{code}_subset.parquet")
+    if os.path.exists(subset_path):
+        return _load_from_parquet(subset_path, limit)
     if os.path.exists(cache_path):
         return _load_from_parquet(cache_path, limit)
 
     # Bundled real slice (preferred over the slow HF streaming path).
-    if os.path.exists(BUNDLED_REAL_PATH):
+    # Only use for Hindi — this file contains Hindi-only data.
+    if language == "hi" and os.path.exists(BUNDLED_REAL_PATH):
         with open(BUNDLED_REAL_PATH, "r", encoding="utf-8") as f:
             corpus = json.load(f)
         return corpus[:limit] if limit else corpus
@@ -149,30 +178,41 @@ def load_real_dataset(split: str = "validation", limit: Optional[int] = None,
         ) from e
 
 
-def _load_from_parquet(path: str, limit: Optional[int]) -> List[Dict[str, Any]]:
+def _load_from_parquet(path: str, limit: Optional[int], english: bool = False) -> List[Dict[str, Any]]:
     import pyarrow.parquet as pq
 
     pf = pq.ParquetFile(path)
     # Path-based column selection decodes only what we need; pyarrow
     # re-nests the passages columns back into a dict.
     cols = [
-        "passages.Translated_passages.list.element",
+        ("passages.English_passages.list.element" if english
+         else "passages.Translated_passages.list.element"),
         "passages.is_selected.list.element",
-        "query", "Answer", "query_id", "query_type",
+        "Eng_Query" if english else "query",
+        "Eng_Answer" if english else "Answer",
+        "query_id", "query_type",
     ]
     table = pf.read_row_group(0, columns=cols)
     if limit:
         table = table.slice(0, limit)
     py_rows = table.to_pylist()
-    return _rows_to_records(py_rows)
+    return _rows_to_records(py_rows, english=english)
 
 
-def load_dataset_with_fallback(prefer_real: bool = True, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+def load_dataset_with_fallback(prefer_real: bool = True, limit: Optional[int] = None,
+                              language: str = "hi") -> List[Dict[str, Any]]:
     if prefer_real:
         try:
-            return load_real_dataset(limit=limit)
+            return load_real_dataset(limit=limit, language=language)
         except Exception as e:
-            print(f"[load_dataset] real dataset unavailable ({e}), falling back to sample_data.json")
+            print(f"[load_dataset] real dataset unavailable for {language} ({e}), falling back to sample_data.json")
+    # Non-Hindi languages: try streaming from HF directly (no bundled fallback)
+    if language != "hi":
+        try:
+            return load_real_dataset(limit=limit or 500, language=language)
+        except Exception as e:
+            print(f"[load_dataset] HF streaming failed for {language} ({e})")
+            return []
     return load_sample_dataset()
 
 

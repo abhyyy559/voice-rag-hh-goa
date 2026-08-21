@@ -62,10 +62,17 @@ the a an of to in is are was were do does did what how which who why when where
 for with on at by from it its and or not can could would should will this that
 these those i you we they he she be been being have has had their there here
 about into over under than then them
+tell give show make get go come take know see find use need try keep let say said
+put run turn move play live feel believe think become leave follow stop help start
+work call seem ask look long much many also very well back still most even after
+here there only now again just because way may down been before being between both
+each same another such every own rather quite really already since while during
+until against among throughout within without before behind below above across
+along around beyond through during except inside outside above below
 """.split())
 
 
-_TOKEN_RE = re.compile(r"[a-zA-Z\u0900-\u097F]+")
+_TOKEN_RE = re.compile(r"[a-zA-Z\u0900-\u097F\u0980-\u09FF\u0C00-\u0C7F]+")  # Latin + Devanagari + Bengali + Telugu
 
 
 def _content_words(text: str, stopwords: frozenset = frozenset()) -> set:
@@ -108,6 +115,23 @@ def check_off_topic(query: str, results: List[RetrievalResult], cfg: GuardrailCo
         )
     overlap = _query_content_overlap(query, results, cfg.stopwords)
     raw_tfidf = top.tfidf_score
+    q_words = _content_words(query, cfg.stopwords)
+
+    # HARD RULE: if the query has content words but NONE of them appear in
+    # the retrieved chunks, the results are topically unrelated regardless
+    # of TF-IDF score. This catches the common case where English function
+    # words ("the", "is", "what") inflate TF-IDF cosine against English
+    # content in a multilingual corpus, while the actual query topic is
+    # absent from the results.
+    if q_words and overlap == 0.0:
+        return GuardrailVerdict(
+            passed=False,
+            reason=f"zero content-word overlap ({len(q_words)} query words, 0 found in context) — "
+                   f"results are topically unrelated to the query",
+            stage="off_topic",
+        )
+
+    # Standard floor check: refuse when BOTH signals are below threshold.
     if raw_tfidf < cfg.off_topic_similarity_floor and overlap < cfg.off_topic_overlap_floor:
         return GuardrailVerdict(
             passed=False,

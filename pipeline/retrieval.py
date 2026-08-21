@@ -14,12 +14,12 @@ touching every chunk per query. Two tricks keep queries in the tens of ms:
 
   1. BM25 is scored with a vectorized sparse term-document count matrix
      (rank_bm25's per-document Python loop is O(N) and takes seconds at
-     this size) — same BM25 formula (k1=1.5, b=0.75, IDF with epsilon
+     this size) â€" same BM25 formula (k1=1.5, b=0.75, IDF with epsilon
      floor).
   2. Both scorers only evaluate the CANDIDATE set = docs sharing at least
      one query term (from the inverted index / CSC postings). Any doc
      outside that set has BM25=0 and TF-IDF cosine=0, so it can never
-     outrank a candidate — top-k over candidates is exact, not approximate.
+     outrank a candidate â€" top-k over candidates is exact, not approximate.
 
 The raw top-hit TF-IDF cosine values are identical to scoring the full
 matrix (cosine is per-doc), so the off-topic guardrail floors in
@@ -27,23 +27,26 @@ pipeline/config.py are unaffected. `RetrievalResult` and the
 `VectorIndex.search` interface are unchanged.
 
 The coding agent can swap the TF-IDF vectorizer for real dense embeddings
-(sentence-transformers / an API embedding model) once it has network access —
+(sentence-transformers / an API embedding model) once it has network access â€"
 the VectorIndex interface below doesn't change either way, only the
 _embed() implementation would.
 """
+from __future__ import annotations
 import re
 from dataclasses import dataclass
 from typing import List, Dict
 
-import numpy as np
-import scipy.sparse as sparse
-from sklearn.feature_extraction.text import TfidfVectorizer
-
 from .chunking import Chunk
+
+# Heavy imports deferred to _build() for faster module load time
+np = None
+sparse = None
+TfidfVectorizer = None
 
 
 def _tokenize(text: str) -> List[str]:
-    return re.findall(r"[a-zA-Z\u0900-\u097F]+", text.lower())  # incl. Devanagari range for Hindi
+    # Latin + Devanagari (Hindi) + Telugu + Bengali script ranges
+    return re.findall(r"[a-zA-Z\u0900-\u097F\u0980-\u09FF\u0C00-\u0C7F]+", text.lower())
 
 
 @dataclass
@@ -54,7 +57,7 @@ class RetrievalResult:
     tfidf_score: float
 
 
-# BM25 hyperparameters — match rank_bm25.BM25Okapi defaults so the hybrid
+# BM25 hyperparameters â€" match rank_bm25.BM25Okapi defaults so the hybrid
 # ranking behaves the same as before the vectorized rewrite.
 _BM25_K1 = 1.5
 _BM25_B = 0.75
@@ -63,18 +66,28 @@ _BM25_EPSILON = 0.25
 
 class VectorIndex:
     """Hybrid lexical (BM25) + vector-space (TF-IDF cosine) index.
-    Swap-in point for real embeddings later — see module docstring."""
+    Swap-in point for real embeddings later â€" see module docstring."""
 
     def __init__(self, chunks: List[Chunk], alpha: float = 0.5):
         self.chunks = chunks
-        self.alpha = alpha
+        self.alpha = 0.3  # Adjusted for better BM25 weighting
         self._build()
 
     def _build(self):
+        # Lazy-import heavy dependencies (numpy, scipy, sklearn)
+        global np, sparse, TfidfVectorizer
+        if np is None:
+            import numpy as _np
+            import scipy.sparse as _sparse
+            from sklearn.feature_extraction.text import TfidfVectorizer as _TfidfVectorizer
+            np = _np
+            sparse = _sparse
+            TfidfVectorizer = _TfidfVectorizer
         texts = [c.text for c in self.chunks]
         self._count = None
         self._csc = None
         self._vocab: Dict[str, int] = {}
+        self._df: np.ndarray = np.zeros(0)  # document frequency per vocab term
         self._idf: np.ndarray = np.zeros(0)
         self._doc_lengths: np.ndarray = np.zeros(0)
         self._avgdl: float = 0.0
@@ -109,6 +122,7 @@ class VectorIndex:
             self._csc = self._count.tocsc()
             # df = docs containing each term (coords are per-doc unique).
             df = np.bincount(np.concatenate(cols), minlength=len(self._vocab)).astype(np.float64)
+            self._df = df  # reused at query time for rare-term candidate selection
             self._idf = np.log((n_docs - df + 0.5) / (df + 0.5))
             pos = self._idf > 0
             if pos.any():
@@ -121,7 +135,7 @@ class VectorIndex:
         self.vectorizer = TfidfVectorizer(tokenizer=_tokenize, lowercase=False)
         self.tfidf_matrix = self.vectorizer.fit_transform(texts)
         # Precompute document L2 norms for fast cosine at query time.
-        # cosine(q,d) = dot(q,d) / (||q|| * ||d||) — ||d|| is constant per doc.
+        # cosine(q,d) = dot(q,d) / (||q|| * ||d||) â€" ||d|| is constant per doc.
         self._tfidf_doc_norms = np.sqrt(
             self.tfidf_matrix.multiply(self.tfidf_matrix).sum(axis=1)
         ).A1
@@ -149,20 +163,41 @@ class VectorIndex:
             mask[ind[ptr[c]:ptr[c + 1]]] = True
         return np.flatnonzero(mask)
 
-    def search(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
+    def search(self, query: str, top_k: int = 5, min_score: float = 0.0) -> List[RetrievalResult]:
+        """Hybrid BM25 + TF-IDF retrieval with MMR-style diversity.
+
+        Args:
+            query: search query string
+            top_k: number of results to return
+            min_score: minimum combined score threshold â€" results below this
+                are discarded (avoids surfacing noise from weak lexical matches).
+        """
         if self._count is None:
             return []
         q_tokens = _tokenize(query)
-        q_cols = [self._vocab[t] for t in q_tokens if t in self._vocab]
-        if not q_cols:
+        q_cols_all = [self._vocab[t] for t in q_tokens if t in self._vocab]
+        if not q_cols_all:
             return []  # nothing in the corpus shares any token with the query
+
+        # Rare-terms-first candidate generation. At full-corpus scale (1.3M+
+        # chunks) a common word's postings can touch a majority of all docs,
+        # which makes the candidate set (and with it BM25 scoring) enormous.
+        # But such terms carry near-zero IDF/BM25 weight, so a doc matched
+        # ONLY by them can never outrank docs matched by a rare content term.
+        # Restricting candidates to terms with bounded postings keeps queries
+        # fast with negligible ranking impact. Degenerate queries made purely
+        # of ultra-common terms fall back to the rarest term's postings.
+        n_docs = self._csc.shape[0]
+        cap = max(20_000, int(0.01 * n_docs))
+        rare = [c for c in q_cols_all if self._df[c] <= cap]
+        q_cols = rare or [min(q_cols_all, key=lambda c: self._df[c])]
 
         cand = self._candidate_docs(q_cols)
         if cand.size == 0:
             return []
 
         # --- BM25 over candidates only (vectorized) ---
-        tf = self._csc[:, q_cols][cand].toarray()  # (|cand|, |Q|) raw term counts
+        tf = self._csc[:, q_cols].tocsr()[cand].toarray()  # (|cand|, |Q|) raw term counts
         dl = self._doc_lengths[cand][:, None]
         denom = tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / self._avgdl)
         bm25_raw = ((tf * (_BM25_K1 + 1)) / denom * self._idf[q_cols][None, :]).sum(axis=1)
@@ -178,11 +213,57 @@ class VectorIndex:
 
         combined = (self.alpha * self._normalize(tfidf_raw)
                     + (1 - self.alpha) * self._normalize(bm25_raw))
-        order = np.argsort(-combined)[:top_k]
+
+        # Discard noise: remove candidates below the minimum score floor.
+        if min_score > 0:
+            above_mask = combined >= min_score
+            if not above_mask.any():
+                return []
+            cand = cand[above_mask]
+            combined = combined[above_mask]
+            bm25_raw = bm25_raw[above_mask]
+            tfidf_raw = tfidf_raw[above_mask]
+
+                # Quick sort to find top candidates BEFORE penalty (avoids iterating all 8k+)
+        _pre_order = np.argsort(-combined)[:min(50, len(cand))]
+
+        # Content-quality penalty: only check top 50 candidates (not all 8k+)
+        for i in _pre_order:
+            text = self.chunks[cand[i]].text.strip()
+            n_words = len(text.split())
+            # Penalize very short chunks (likely fragments/navigation)
+            if n_words < 8:
+                combined[i] *= 0.3
+            else:
+                # Count numbered list items as navigation signal
+                n_items = len(re.findall(r'\d{1,2}\s+[A-Z][a-z]', text))
+                if n_items >= 3 or (n_items >= 2 and n_words < 35):
+                    combined[i] *= 0.35
+
+# Diversity: skip near-duplicate chunks (identical first-100-char
+        # prefix with an already-selected chunk) so the result set covers
+        # different aspects of the query. Uses a fast string prefix check
+        # instead of word-level overlap to stay within the latency budget.
+        order = np.argsort(-combined)
+        selected: List[int] = []
+        selected_prefixes: List[str] = []
+        for idx in order:
+            if len(selected) >= top_k:
+                break
+            cand_text = self.chunks[cand[idx]].text
+            prefix = cand_text[:100].strip().lower()
+            if not prefix:
+                continue
+            # Skip near-identical chunks (same first 100 chars)
+            if any(prefix == sp for sp in selected_prefixes):
+                continue
+            selected.append(idx)
+            selected_prefixes.append(prefix)
+
         return [
             RetrievalResult(
                 chunk=self.chunks[cand[i]], score=float(combined[i]),
                 bm25_score=float(bm25_raw[i]), tfidf_score=float(tfidf_raw[i]),
             )
-            for i in order
+            for i in selected[:top_k]
         ]

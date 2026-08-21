@@ -2,469 +2,526 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Voice RAG — HH Goa 2026</title>
+<title>Ask Anything — Voice RAG · HH Goa 2026</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Imbue:opsz,wght@10..25,400;10..25,600;10..25,700;10..25,800&family=Victor+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+  /* ================================================================
+     HH GOA 2026 brand kit (extracted from hhgoa.com):
+       brand-green  #0b6839 · brand-yellow #fee101
+       brand-pink   #ff0080 · offwhite    #fffbe8 · ink #14130f
+       headings: Imbue (bold uppercase) · body: Victor Mono
+       cards: offwhite, hard offset shadow, .625rem radius
+     ================================================================ */
   :root {
-    --bg: #0a0b0f;
-    --bg2: #12141c;
-    --card: #161923;
-    --card-border: #1e2233;
-    --accent: #6c8cff;
-    --accent-glow: rgba(108,140,255,0.15);
-    --text: #e4e7ef;
-    --muted: #7a809a;
-    --ok: #34d399;
-    --ok-bg: rgba(52,211,153,0.08);
-    --warn: #fbbf24;
-    --warn-bg: rgba(251,191,36,0.08);
-    --err: #f87171;
-    --err-bg: rgba(248,113,113,0.08);
-    --radius: 14px;
-    --radius-sm: 10px;
+    --green: #0b6839;
+    --green-deep: #095730;
+    --yellow: #fee101;
+    --pink: #ff0080;
+    --offwhite: #fffbe8;
+    --ink: #14130f;
+    --white: #ffffff;
+    --radius: .625rem;
+    --radius-pill: 999px;
+    --shadow-hard: 8px 10px 0 rgba(0,0,0,0.25);
+    --font-heading: 'Imbue', serif;
+    --font-mono: 'Victor Mono', ui-monospace, monospace;
+    --latency-budget-ms: 100;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    font-family: var(--font-mono);
+    background: var(--green);
+    color: var(--white);
     min-height: 100vh;
     line-height: 1.6;
   }
+  ::selection { background: var(--yellow); color: var(--ink); }
 
-  /* ---- Layout ---- */
-  .container { max-width: 780px; margin: 0 auto; padding: 32px 20px 60px; }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 20px 70px; }
 
   /* ---- Header ---- */
-  .header { text-align: center; margin-bottom: 36px; }
-  .header h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #6c8cff, #a78bfa, #f472b6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 6px;
+  .header { text-align: center; margin-bottom: 26px; }
+  .kicker {
+    font-family: var(--font-heading);
+    font-weight: 800; text-transform: uppercase;
+    letter-spacing: .14em; color: var(--pink);
+    font-size: .95rem; margin-bottom: 4px;
   }
-  .header .tagline {
-    color: var(--muted);
-    font-size: 0.88rem;
-    max-width: 520px;
-    margin: 0 auto;
+  .header h1 {
+    font-family: var(--font-heading);
+    font-weight: 700; text-transform: uppercase;
+    font-size: clamp(3rem, 9vw, 5rem);
+    line-height: .95; color: var(--white);
+    letter-spacing: .01em; margin-bottom: 12px;
+  }
+  .tagline {
+    font-family: var(--font-mono); color: var(--yellow);
+    font-size: .95rem; max-width: 560px; margin: 0 auto 10px;
+  }
+  .meta-line {
+    font-family: var(--font-mono); font-size: .72rem;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: rgba(255,255,255,.75);
   }
 
-  /* ---- Pipeline diagram ---- */
+  /* ---- Marquee ---- */
+  .marquee {
+    overflow: hidden; border-top: 2px solid var(--white);
+    border-bottom: 2px solid var(--white); margin-bottom: 30px;
+  }
+  .marquee-track { display: flex; width: max-content; animation: marquee 26s linear infinite; }
+  .marquee-track span {
+    font-family: var(--font-mono); font-weight: 700; text-transform: uppercase;
+    color: var(--pink); letter-spacing: .12em; font-size: .78rem;
+    padding: 9px 22px; white-space: nowrap;
+  }
+  .marquee-track span.y { color: var(--yellow); }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ---- Stats row (hhgoa.com "Registrations / Projects / Hackers") ---- */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    margin-bottom: 30px; text-align: center;
+  }
+  .stat { padding: 14px 6px; }
+  .stat .num {
+    font-family: var(--font-heading); font-weight: 800;
+    font-size: 2.2rem; line-height: 1.1; color: var(--yellow);
+  }
+  .stat .lbl {
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .1em;
+    color: rgba(255,255,255,.8); margin-top: 2px;
+  }
+
+  /* ---- Cards: offwhite, hard shadow ---- */
+  .card {
+    background: var(--offwhite); color: var(--ink);
+    border-radius: var(--radius); box-shadow: var(--shadow-hard);
+    padding: 26px; margin-bottom: 26px;
+  }
+  .card-label {
+    font-family: var(--font-heading); font-weight: 800;
+    text-transform: uppercase; letter-spacing: .1em;
+    color: var(--pink); font-size: .82rem; margin-bottom: 14px;
+  }
+
+  /* ---- Pipeline strip ---- */
   .pipeline {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 32px;
-    padding: 14px 20px;
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius);
-    font-size: 0.78rem;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    flex-wrap: wrap; margin-bottom: 30px; font-size: .72rem;
   }
   .pipe-step {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    background: var(--bg2);
-    border: 1px solid var(--card-border);
-    white-space: nowrap;
+    font-family: var(--font-mono); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; padding: 6px 14px; border-radius: var(--radius-pill);
+    border: 2px solid rgba(255,255,255,.5); color: var(--white);
+    white-space: nowrap; transition: all .2s;
   }
-  .pipe-step .icon { font-size: 0.95rem; }
-  .pipe-step .label { color: var(--muted); }
-  .pipe-arrow { color: #3a3f55; font-size: 0.9rem; }
-
-  /* ---- Cards ---- */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius);
-    padding: 24px;
-    margin-bottom: 16px;
-  }
+  .pipe-step.lit { border-color: var(--yellow); color: var(--yellow); }
+  .pipe-arrow { color: rgba(255,255,255,.4); }
 
   /* ---- Health bar ---- */
   .health-bar {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 24px;
-    font-size: 0.78rem;
-    color: var(--muted);
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 30px; font-size: .72rem; color: var(--yellow);
   }
-  .health-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .health-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--ok);
-    flex-shrink: 0;
-  }
-  .health-dot.off { background: var(--err); }
-  .health-dot.warn { background: var(--warn); }
+  .health-item { display: flex; align-items: center; gap: 6px; }
+  .health-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--yellow); flex-shrink: 0; }
+  .health-dot.off { background: var(--pink); }
 
-  /* ---- Input area ---- */
-  .input-area { display: flex; flex-direction: column; gap: 12px; }
+  /* ---- Architecture diagram ---- */
+  .arch-diagram { margin: 10px 0; overflow-x: auto; }
+  .arch-row {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    flex-wrap: wrap; padding: 10px 0;
+  }
+  .arch-box {
+    background: var(--white); border: 2px solid var(--ink);
+    border-radius: var(--radius); padding: 12px 16px; text-align: center;
+    min-width: 120px; transition: transform .15s, box-shadow .15s;
+  }
+  .arch-box:hover { transform: translateY(-3px); box-shadow: 4px 5px 0 rgba(0,0,0,.2); }
+  .arch-icon { font-size: 1.5rem; margin-bottom: 4px; }
+  .arch-title {
+    font-family: var(--font-heading); font-weight: 700; text-transform: uppercase;
+    font-size: .72rem; letter-spacing: .06em; color: var(--ink); margin-bottom: 2px;
+  }
+  .arch-desc { font-size: .62rem; color: rgba(20,19,15,.6); }
+  .arch-arrow {
+    font-size: 1.2rem; color: var(--pink); font-weight: 700;
+  }
+  .arch-input { border-color: var(--green); }
+  .arch-guard { border-color: var(--pink); }
+  .arch-retrieve { border-color: var(--yellow); }
+  .arch-chunk { border-color: var(--green); }
+  .arch-answer { border-color: var(--pink); }
 
-  .mode-toggle {
-    display: flex;
-    background: var(--bg2);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--card-border);
-    overflow: hidden;
-  }
-  .mode-btn {
-    flex: 1;
-    padding: 10px 0;
-    font-size: 0.85rem;
-    font-weight: 500;
-    text-align: center;
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    transition: all 0.2s;
-  }
-  .mode-btn.active {
-    background: var(--accent);
-    color: #fff;
-    border-radius: var(--radius-sm);
-  }
-  .mode-btn:not(.active):hover { color: var(--text); background: rgba(255,255,255,0.03); }
-
-  .text-row {
-    display: flex;
-    gap: 10px;
-    align-items: stretch;
-  }
-  .text-row input {
-    flex: 1;
-    padding: 12px 16px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--card-border);
-    background: var(--bg2);
-    color: var(--text);
-    font-size: 0.95rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .text-row input:focus { border-color: var(--accent); }
-  .text-row input::placeholder { color: #4a4f68; }
-
-  .voice-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  @media (max-width: 620px) {
+    .arch-row { gap: 5px; }
+    .arch-box { min-width: 90px; padding: 8px 10px; }
+    .arch-icon { font-size: 1.2rem; }
+    .arch-title { font-size: .6rem; }
+    .arch-desc { display: none; }
+    .arch-arrow { font-size: .9rem; }
   }
 
-  .rec-btn {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    border: 2px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
-    font-size: 1.3rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
-    flex-shrink: 0;
-    position: relative;
+  /* ---- Voice-first input ---- */
+  .voice-row { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; }
+  .mic-btn {
+    width: 68px; height: 68px; border-radius: 50%;
+    border: 3px solid var(--ink); background: var(--green); color: var(--white);
+    font-size: 1.7rem; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .15s; font-family: inherit;
   }
-  .rec-btn:hover { background: var(--accent-glow); }
-  .rec-btn.recording {
-    background: var(--err);
-    border-color: var(--err);
-    color: #fff;
-    animation: pulse-ring 1.2s ease infinite;
+  .mic-btn:hover { transform: scale(1.05); }
+  .mic-btn.listening {
+    background: var(--pink); border-color: var(--pink); color: var(--white);
+    animation: pulse-glow 1.2s ease infinite;
   }
-  @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 rgba(248,113,113,0.4); }
-    70% { box-shadow: 0 0 0 12px rgba(248,113,113,0); }
-    100% { box-shadow: 0 0 0 0 rgba(248,113,113,0); }
+  @keyframes pulse-glow {
+    0% { box-shadow: 0 0 0 0 rgba(255,0,128,.45); }
+    70% { box-shadow: 0 0 0 14px rgba(255,0,128,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,0,128,0); }
+  }
+  .mic-copy { flex: 1; min-width: 0; }
+  .mic-title {
+    font-family: var(--font-heading); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; font-size: 1.15rem; color: var(--ink);
+  }
+  .mic-sub { font-size: .78rem; color: rgba(20,19,15,.72); margin-top: 2px; }
+  .mic-sub.live { color: var(--pink); font-weight: 700; }
+
+  .wave { display: none; align-items: flex-end; justify-content: center; gap: 4px; height: 28px; margin: 2px 0 12px; }
+  .wave.on { display: flex; }
+  .wave span { width: 5px; border-radius: 2px; background: var(--pink); animation: bounce-subtle .9s ease-in-out infinite; }
+  .wave span:nth-child(even) { background: var(--green); animation-duration: .7s; }
+  @keyframes bounce-subtle { 0%,100% { height: 7px; } 50% { height: 26px; } }
+
+  .controls-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .controls-row label {
+    font-size: .7rem; color: rgba(20,19,15,.65);
+    text-transform: uppercase; letter-spacing: .1em; white-space: nowrap;
+  }
+  select {
+    padding: 9px 14px; border-radius: var(--radius);
+    border: 2px solid var(--ink); background: var(--white); color: var(--ink);
+    font-family: var(--font-mono); font-size: .82rem; cursor: pointer; outline: none;
+  }
+  .stt-mode-tag {
+    font-size: .68rem; padding: 4px 12px; border-radius: var(--radius-pill);
+    border: 1.5px dashed rgba(20,19,15,.45); color: rgba(20,19,15,.65);
+    text-transform: lowercase;
   }
 
-  .rec-label {
-    font-size: 0.85rem;
-    color: var(--muted);
+  .query-row { display: flex; gap: 12px; }
+  .query-row input {
+    flex: 1; padding: 14px 16px; border-radius: var(--radius);
+    border: 2px solid var(--ink); background: var(--white);
+    color: var(--ink); font-size: .98rem; outline: none;
+    font-family: var(--font-mono); transition: border-color .15s;
   }
-  .rec-label.active { color: var(--err); font-weight: 500; }
+  .query-row input:focus { border-color: var(--pink); }
+  .query-row input::placeholder { color: rgba(20,19,15,.4); }
+  .submit-btn {
+    padding: 14px 30px; border-radius: var(--radius-pill); border: none;
+    background: var(--pink); color: var(--white);
+    font-family: var(--font-heading); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; font-size: .95rem; cursor: pointer; white-space: nowrap;
+    transition: opacity .15s, transform .15s;
+  }
+  .submit-btn:hover { opacity: .9; transform: translateY(-1px); }
+  .submit-btn:disabled { opacity: .5; cursor: wait; transform: none; }
 
-  /* ---- Sample queries ---- */
   .samples-label {
-    font-size: 0.78rem;
-    color: var(--muted);
-    margin-bottom: 8px;
+    font-family: var(--font-heading); font-weight: 800; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--pink); font-size: .72rem; margin: 18px 0 10px;
   }
-  .samples {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
+  .samples { display: flex; gap: 8px; flex-wrap: wrap; }
   .sample-chip {
-    padding: 6px 14px;
-    border-radius: 20px;
-    border: 1px solid var(--card-border);
-    background: var(--bg2);
-    color: var(--muted);
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
+    padding: 6px 15px; border-radius: var(--radius-pill);
+    border: 2px solid var(--green); background: transparent; color: var(--ink);
+    font-family: var(--font-mono); font-size: .76rem; cursor: pointer;
+    transition: all .15s;
   }
-  .sample-chip:hover {
-    border-color: var(--accent);
-    color: var(--text);
-    background: var(--accent-glow);
-  }
+  .sample-chip:hover { background: var(--green); color: var(--white); }
+  .sample-chip.chip-refuse { border-color: var(--pink); color: var(--pink); }
+  .sample-chip.chip-refuse:hover { background: var(--pink); color: var(--white); }
 
   /* ---- Result card ---- */
   .result-card { display: none; }
-  .result-card.visible { display: block; animation: fade-in 0.25s ease; }
-  @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .result-card.visible { display: block; animation: fade-in-up .3s ease; }
+  @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-  .result-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
+  .result-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
   .badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 4px 12px;
-    border-radius: 20px;
+    font-family: var(--font-heading); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; font-size: .78rem;
+    padding: 5px 16px; border-radius: var(--radius-pill);
   }
-  .badge.ok { background: var(--ok-bg); color: var(--ok); }
-  .badge.refused { background: var(--warn-bg); color: var(--warn); }
-  .badge.error { background: var(--err-bg); color: var(--err); }
+  .badge.ok { background: var(--green); color: var(--white); }
+  .badge.refused { background: var(--yellow); color: var(--ink); }
+  .badge.error { background: var(--pink); color: var(--white); }
+  .result-query { font-size: .8rem; color: rgba(20,19,15,.6); font-style: italic; }
 
-  .result-query {
-    font-size: 0.85rem;
-    color: var(--muted);
-    font-style: italic;
+  /* ---- Latency HUD ---- */
+  .latency-hud {
+    display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+    padding: 16px 20px; background: var(--green); border-radius: var(--radius);
+    margin-bottom: 18px; color: var(--white);
+  }
+  .hud-main { display: flex; align-items: baseline; gap: 10px; }
+  .hud-value {
+    font-family: var(--font-mono); font-weight: 700;
+    font-size: 2.1rem; color: var(--yellow); font-variant-numeric: tabular-nums;
+  }
+  .hud-caption { font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,.8); line-height: 1.5; }
+  .hud-server { font-size: .74rem; color: rgba(255,255,255,.85); line-height: 1.5; }
+  .hud-server b { color: var(--yellow); font-variant-numeric: tabular-nums; }
+
+  .answer-block { margin-bottom: 18px; line-height: 1.7; font-size: .92rem; color: var(--ink); }
+  .section-label {
+    font-family: var(--font-heading); font-weight: 800; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--pink); font-size: .78rem;
+    margin-bottom: 8px;
   }
 
-  .answer-block {
-    margin-bottom: 18px;
-    line-height: 1.7;
-    font-size: 0.95rem;
-  }
-  .answer-label {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin-bottom: 6px;
-    font-weight: 600;
-  }
-
-  /* ---- Latency breakdown ---- */
   .latency-section { margin-bottom: 18px; }
-  .latency-section .answer-label { margin-bottom: 10px; }
-  .latency-bar-container {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .latency-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.78rem;
-  }
+  .latency-bar-container { display: flex; flex-direction: column; gap: 7px; }
+  .latency-row { display: flex; align-items: center; gap: 10px; font-size: .74rem; }
   .latency-label {
-    width: 140px;
-    text-align: right;
-    color: var(--muted);
-    flex-shrink: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    width: 160px; text-align: right; color: rgba(20,19,15,.65);
+    flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .latency-track {
-    flex: 1;
-    height: 8px;
-    background: var(--bg2);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
+    flex: 1; height: 10px; background: rgba(20,19,15,.1);
+    border-radius: 5px; overflow: hidden;
   }
-  .latency-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.4s ease;
-    min-width: 2px;
-  }
-  .latency-fill.stt { background: linear-gradient(90deg, #a78bfa, #818cf8); }
-  .latency-fill.retrieval { background: linear-gradient(90deg, #34d399, #6ee7b7); }
-  .latency-fill.generation { background: linear-gradient(90deg, #6c8cff, #93c5fd); }
-  .latency-fill.guardrail { background: linear-gradient(90deg, #fbbf24, #fcd34d); }
+  .latency-fill { height: 100%; border-radius: 5px; transition: width .4s ease; min-width: 3px; }
+  .latency-fill.stt { background: var(--pink); }
+  .latency-fill.retrieval { background: var(--green); }
+  .latency-fill.generation { background: var(--yellow); }
+  .latency-fill.guardrail { background: rgba(20,19,15,.35); }
   .latency-value {
-    width: 75px;
-    text-align: right;
-    color: var(--text);
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
+    width: 78px; text-align: right; color: var(--ink); font-weight: 700;
+    font-variant-numeric: tabular-nums; flex-shrink: 0;
   }
 
-  /* ---- Sources ---- */
-  .sources-section .answer-label { margin-bottom: 10px; }
+  /* ---- Latency chart ---- */
+  .latency-chart {
+    display: flex; align-items: flex-end; gap: 6px; height: 100px;
+    padding: 10px 0; border-bottom: 2px solid rgba(20,19,15,.15);
+    margin-bottom: 12px;
+  }
+  .latency-chart-bar {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-end;
+  }
+  .latency-chart-fill {
+    width: 100%; border-radius: 4px 4px 0 0; transition: height .4s ease;
+    min-height: 2px;
+  }
+  .latency-chart-label {
+    font-size: .6rem; color: rgba(20,19,15,.6); margin-top: 6px;
+    text-align: center; word-break: break-word;
+  }
+  .latency-chart-value {
+    font-size: .68rem; font-weight: 700; color: var(--ink);
+    margin-bottom: 4px; font-variant-numeric: tabular-nums;
+  }
+
   .source-item {
-    padding: 12px 14px;
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius-sm);
-    margin-bottom: 8px;
-    font-size: 0.82rem;
-    line-height: 1.5;
+    padding: 12px 15px; border: 2px solid rgba(20,19,15,.85);
+    border-radius: var(--radius); margin-bottom: 9px;
+    font-size: .78rem; line-height: 1.55; background: var(--white);
   }
   .source-item:last-child { margin-bottom: 0; }
-  .source-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-  }
-  .source-id { color: var(--accent); font-weight: 500; font-size: 0.78rem; }
+  .source-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; flex-wrap: wrap; }
+  .source-id { color: var(--green); font-weight: 700; font-size: .74rem; }
   .source-score {
-    font-size: 0.75rem;
-    color: var(--muted);
-    background: var(--bg2);
-    padding: 2px 8px;
-    border-radius: 12px;
+    font-size: .7rem; color: var(--ink); background: var(--yellow);
+    padding: 2px 10px; border-radius: var(--radius-pill); font-weight: 700;
   }
-  .source-text { color: var(--muted); }
+  .source-text { color: rgba(20,19,15,.75); }
 
-  /* ---- Total time ---- */
-  .total-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    background: var(--bg2);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--card-border);
-    font-size: 0.85rem;
+  /* ---- Chunk Views ---- */
+  .chunk-views-section { margin-top: 20px; }
+  .chunk-tabs {
+    display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
   }
-  .total-label { color: var(--muted); }
-  .total-value { font-weight: 700; font-variant-numeric: tabular-nums; }
-
-  /* ---- Loading ---- */
-  .loading-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(10,11,15,0.6);
-    backdrop-filter: blur(4px);
-    z-index: 100;
-    justify-content: center;
-    align-items: center;
+  .chunk-tab {
+    padding: 8px 16px; border-radius: var(--radius-pill); border: 2px solid var(--ink);
+    background: var(--white); color: var(--ink); font-family: var(--font-mono);
+    font-size: .74rem; cursor: pointer; transition: all .15s; font-weight: 500;
   }
-  .loading-overlay.visible { display: flex; }
-  .loading-spinner {
-    width: 48px; height: 48px;
-    border: 3px solid var(--card-border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+  .chunk-tab:hover { background: rgba(20,19,15,.05); }
+  .chunk-tab.active { background: var(--ink); color: var(--white); }
+  .chunk-view-content {
+    background: var(--white); border: 2px solid var(--ink);
+    border-radius: var(--radius); padding: 16px; min-height: 80px;
+    font-size: .78rem; line-height: 1.6; color: rgba(20,19,15,.85);
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .chunk-view-item {
+    padding: 10px 12px; border-bottom: 1px solid rgba(20,19,15,.1);
+  }
+  .chunk-view-item:last-child { border-bottom: none; }
+  .chunk-view-meta {
+    font-size: .68rem; color: var(--pink); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px;
+  }
 
   /* ---- Footer ---- */
   .footer {
-    text-align: center;
-    margin-top: 40px;
-    font-size: 0.75rem;
-    color: #3a3f55;
+    text-align: center; margin-top: 44px; font-size: .72rem;
+    color: rgba(255,255,255,.65); line-height: 2;
   }
-  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a { color: var(--yellow); text-decoration: none; border-bottom: 1px dashed var(--yellow); }
+  .footer .hash { color: var(--pink); font-weight: 700; }
 
-  /* ---- Mobile ---- */
-  @media (max-width: 600px) {
-    .container { padding: 20px 14px 40px; }
-    .header h1 { font-size: 1.35rem; }
-    .pipeline { gap: 4px; font-size: 0.7rem; padding: 10px 12px; }
-    .pipe-step { padding: 4px 8px; }
+  @media (max-width: 620px) {
+    .container { padding: 26px 14px 50px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .pipeline { gap: 5px; }
     .pipe-arrow { display: none; }
-    .text-row { flex-direction: column; }
-    .latency-label { width: 100px; font-size: 0.72rem; }
+    .query-row { flex-direction: column; }
+    .latency-label { width: 108px; font-size: .68rem; }
+    .card { padding: 20px 16px; box-shadow: 5px 6px 0 rgba(0,0,0,.25); }
   }
 </style>
 </head>
 <body>
 
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-spinner"></div>
-</div>
-
 <div class="container">
   <!-- Header -->
   <div class="header">
-    <h1>Voice RAG</h1>
-    <div class="tagline">Speak or type a question in Hindi — powered by ai4bharat/MSMARCO-XI with hybrid retrieval &amp; guardrails</div>
+    <div class="kicker">Task #2 · Voice-Enabled RAG Model</div>
+    <h1>Ask Anything</h1>
+    <div class="tagline">Speak a question, get a grounded answer.</div>
+    <div class="meta-line">HH Goa 2026 · Goa, India · #RAGInGoa</div>
   </div>
 
-  <!-- Pipeline diagram -->
-  <div class="pipeline">
-    <div class="pipe-step"><span class="icon">🎙️</span><span class="label">STT</span></div>
+  <!-- Marquee -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track" id="marqueeTrack"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="statsRow">
+    <div class="stat"><div class="num" id="statChunks">—</div><div class="lbl">chunks indexed</div></div>
+    <div class="stat"><div class="num" id="statRecords">—</div><div class="lbl">records</div></div>
+    <div class="stat"><div class="num" id="statLangs">4</div><div class="lbl">languages</div></div>
+    <div class="stat"><div class="num">&lt;200ms</div><div class="lbl">submit → answer</div></div>
+    <div class="stat"><div class="num">3</div><div class="lbl">chunk strategies</div></div>
+    <div class="stat"><div class="num">0</div><div class="lbl">llm calls in hot path</div></div>
+  </div>
+
+  <!-- Pipeline strip -->
+  <div class="pipeline" id="pipelineStrip">
+    <div class="pipe-step" id="pipe-mic">Listen</div>
     <span class="pipe-arrow">→</span>
-    <div class="pipe-step"><span class="icon">🛡️</span><span class="label">Guard</span></div>
+    <div class="pipe-step" id="pipe-guard1">Guard</div>
     <span class="pipe-arrow">→</span>
-    <div class="pipe-step"><span class="icon">🔍</span><span class="label">Retrieve</span></div>
+    <div class="pipe-step" id="pipe-retrieve">Retrieve</div>
     <span class="pipe-arrow">→</span>
-    <div class="pipe-step"><span class="icon">🛡️</span><span class="label">Guard</span></div>
+    <div class="pipe-step" id="pipe-guard2">Relevance</div>
     <span class="pipe-arrow">→</span>
-    <div class="pipe-step"><span class="icon">✨</span><span class="label">Generate</span></div>
-    <span class="pipe-arrow">→</span>
-    <div class="pipe-step"><span class="icon">🛡️</span><span class="label">Ground</span></div>
+    <div class="pipe-step" id="pipe-gen">Answer</div>
   </div>
 
   <!-- Health bar -->
   <div class="health-bar" id="healthBar"></div>
 
+  <!-- Architecture diagram -->
+  <div class="card">
+    <div class="card-label">Architecture — how it works</div>
+    <div class="arch-diagram">
+      <div class="arch-row">
+        <div class="arch-box arch-input">
+          <div class="arch-icon">🎙</div>
+          <div class="arch-title">Voice Input</div>
+          <div class="arch-desc">Browser STT or server fallback</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box arch-guard">
+          <div class="arch-icon">🛡</div>
+          <div class="arch-title">Guardrails</div>
+          <div class="arch-desc">Unsafe + off-topic detection</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box arch-retrieve">
+          <div class="arch-icon">🔍</div>
+          <div class="arch-title">Hybrid Retrieval</div>
+          <div class="arch-desc">BM25 + TF-IDF cosine</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box arch-chunk">
+          <div class="arch-icon">📦</div>
+          <div class="arch-title">Multi-Strategy Chunks</div>
+          <div class="arch-desc">Metadata + Sentence + Hybrid</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box arch-answer">
+          <div class="arch-icon">✨</div>
+          <div class="arch-title">Extractive Answer</div>
+          <div class="arch-desc">Grounded, no LLM needed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Input card -->
   <div class="card">
-    <div class="input-area">
-      <!-- Mode toggle -->
-      <div class="mode-toggle" id="modeToggle">
-        <button class="mode-btn active" data-mode="fast">⚡ Fast (extractive)</button>
-        <button class="mode-btn" data-mode="deep">🧠 Deep (LLM)</button>
-      </div>
+    <div class="card-label">Speak the question — real voice-to-text, not typed</div>
 
-      <!-- Text input -->
-      <div class="text-row">
-        <input type="text" id="textInput" placeholder="Type a Hindi question... (e.g. भारत की राजधानी क्या है?)" autocomplete="off">
-        <button id="sendBtn" style="padding:12px 20px;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--accent);color:#fff;font-size:0.9rem;cursor:pointer;white-space:nowrap;font-weight:500;">Ask →</button>
+    <div class="voice-row">
+      <button class="mic-btn" id="micBtn" title="Toggle live transcription">🎙</button>
+      <div class="mic-copy">
+        <div class="mic-title" id="micTitle">Voice-first query</div>
+        <div class="mic-sub" id="micSub">Tap the mic and speak — your words appear here live. Tap again when done, then hit Submit.</div>
       </div>
+    </div>
+    <div class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
-      <!-- Voice input -->
-      <div class="voice-row">
-        <button class="rec-btn" id="recBtn">🎙</button>
-        <span class="rec-label" id="recLabel">Tap to record a voice question</span>
-      </div>
+    <div class="controls-row">
+      <label for="langSelect">🌐 Language</label>
+      <select id="langSelect">
+        <option value="en" selected>English</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="te">తెలుగు (Telugu)</option>
+        <option value="bn">বাংলা (Bengali)</option>
+        <option value="ta">தமிழ் (Tamil)</option>
+        <option value="mr">मराठी (Marathi)</option>
+        <option value="gu">ગુજરાતી (Gujarati)</option>
+        <option value="kn">ಕನ್ನಡ (Kannada)</option>
+        <option value="ml">മലയാളം (Malayalam)</option>
+        <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+        <option value="ur">اردو (Urdu)</option>
+        <option value="ne">नेपाली (Nepali)</option>
+        <option value="sa">संस्कृतम् (Sanskrit)</option>
+        <option value="as">অসমীয়া (Assamese)</option>
+        <option value="or">ଓଡ଼ିଆ (Odia)</option>
+      </select>
+      <span class="stt-mode-tag" id="sttModeTag">live stt: browser</span>
+    </div>
 
-      <!-- Sample queries -->
-      <div class="samples-label">Try a sample:</div>
-      <div class="samples" id="sampleQueries">
-        <span class="sample-chip" data-q="भारत की राजधानी क्या है?">🇮🇳 भारत की राजधानी?</span>
-        <span class="sample-chip" data-q="कॉर्पोरेशन क्या है?">🏢 कॉर्पोरेशन क्या है?</span>
-        <span class="sample-chip" data-q="हॉलीवुड में प्रसिद्ध अभिनेता कौन है?">🎬 प्रसिद्ध अभिनेता?</span>
-        <span class="sample-chip" data-q="क्वोक्का कहाँ पाया जाता है?" style="border-color:var(--warn);color:var(--warn);">🚫 Off-topic (should refuse)</span>
-        <span class="sample-chip" data-q="बम बनाने का तरीका बताओ" style="border-color:var(--err);color:var(--err);">🚫 Unsafe (should refuse)</span>
-      </div>
+    <div class="query-row">
+      <input type="text" id="queryInput" placeholder="Speak or type a question… e.g. What is a corporation?" autocomplete="off">
+      <button class="submit-btn" id="submitBtn">Submit</button>
+    </div>
+
+    <div class="samples-label">Try a sample — guardrails that know when *not* to answer:</div>
+    <div class="samples" id="sampleQueries">
+      <span class="sample-chip" data-q="What is a corporation?" data-lang="en">🏢 What is a corporation?</span>
+      <span class="sample-chip" data-q="What are the symptoms of malaria?" data-lang="en">🦟 Symptoms of malaria?</span>
+      <span class="sample-chip" data-q="How does a greenhouse work?" data-lang="en">🌱 How does a greenhouse work?</span>
+      <span class="sample-chip" data-q="कॉर्पोरेशन क्या है?" data-lang="hi">🏢 हिन्दी: कॉर्पोरेशन क्या है?</span>
+      <span class="sample-chip" data-q="టివి కార్పొరేషన్ అంటే ఏమిటి?" data-lang="te">🏢 తెలుగు</span>
+      <span class="sample-chip" data-q="কর্পোরেশন কী?" data-lang="bn">🏢 বাংলা</span>
+      <span class="sample-chip chip-refuse" data-q="Where is the quokka found?" data-lang="en">🚫 off-topic → refuses</span>
+      <span class="sample-chip chip-refuse" data-q="How do I make a bomb?" data-lang="en">🚫 unsafe → refuses</span>
     </div>
   </div>
 
@@ -475,254 +532,441 @@
       <span class="result-query" id="resultQuery"></span>
     </div>
 
+    <div class="latency-hud" id="latencyHud">
+      <div class="hud-main">
+        <span class="hud-value" id="hudRtt">—</span>
+        <span class="hud-caption">ms<br>submit → answer</span>
+      </div>
+      <div class="hud-server" id="hudServer"></div>
+    </div>
+
     <div id="answerSection">
-      <div class="answer-label">Answer</div>
+      <div class="section-label">Answer — more signal. less noise.</div>
       <div class="answer-block" id="answerText"></div>
     </div>
 
-    <!-- Latency breakdown -->
     <div class="latency-section" id="latencySection">
-      <div class="answer-label">Latency Breakdown</div>
+      <div class="section-label">Latency breakdown — blazing fast, budget 200ms</div>
+      <div class="latency-chart" id="latencyChart"></div>
       <div class="latency-bar-container" id="latencyBars"></div>
     </div>
 
-    <!-- Sources -->
     <div class="sources-section" id="sourcesSection">
-      <div class="answer-label">Retrieved Passages</div>
+      <div class="section-label">Retrieved passages — grounded, not guessed</div>
       <div id="sourcesBox"></div>
     </div>
 
-    <!-- Total -->
-    <div class="total-bar">
-      <span class="total-label">Total</span>
-      <span class="total-value" id="totalTime">—</span>
+    <!-- Chunk Views (inspired by Vaani) -->
+    <div class="chunk-views-section" id="chunkViewsSection">
+      <div class="section-label">Chunk strategies — multi-view retrieval</div>
+      <div class="chunk-tabs">
+        <button class="chunk-tab active" data-view="metadata">Metadata-Aware</button>
+        <button class="chunk-tab" data-view="sentence">Sentence Windows</button>
+        <button class="chunk-tab" data-view="hybrid">Hybrid Fixed</button>
+      </div>
+      <div class="chunk-view-content" id="chunkViewContent"></div>
     </div>
   </div>
 
   <div class="footer">
-    Built for <a href="https://github.com/abhyyy559/voice-rag-hh-goa" target="_blank">HH Goa 2026</a> ·
-    Dataset: <a href="https://huggingface.co/datasets/ai4bharat/MSMARCO-XI" target="_blank">ai4bharat/MSMARCO-XI</a>
+    © 2026 HH-Goa · Task #2 — Voice-Enabled RAG Model · don't forget <span class="hash">#RAGInGoa</span> on every post<br>
+    dataset: <a href="https://huggingface.co/datasets/ai4bharat/MSMARCO-XI" target="_blank">ai4bharat/MSMARCO-XI</a> ·
+    embeddings: <a href="https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" target="_blank">multilingual-MiniLM</a> ·
+    <a href="https://github.com/abhyyy559/voice-rag-hh-goa" target="_blank">repo</a><br>
+    <span style="color:rgba(255,255,255,.5)">chunking: metadata-aware + sentence windows + hybrid fixed · retrieval: BM25 + TF-IDF cosine · generation: extractive (no LLM)</span>
   </div>
 </div>
 
 <script>
-// ---- State ----
-let currentMode = 'fast';
-let mediaRecorder, audioChunks = [], recording = false;
+'use strict';
+/* =====================================================================
+   Voice-first flow (HH Goa Task #2):
+   1. Tap mic -> browser SpeechRecognition live-transcribes into the box
+      (zero server cost, happens BEFORE submit, so it never touches the
+      latency budget).
+   2. Tap Submit -> single POST /api/query/text -> retrieval + extractive
+      answer. No LLM in the hot path. Client-measured RTT shown in the HUD.
+   Browsers without SpeechRecognition fall back to record-and-upload
+   (/api/query/voice, server-side Whisper) automatically.
+   ===================================================================== */
 
-// ---- DOM refs ----
 const $ = id => document.getElementById(id);
-const recBtn = $('recBtn');
-const recLabel = $('recLabel');
-const textInput = $('textInput');
-const sendBtn = $('sendBtn');
-const resultCard = $('resultCard');
-const statusBadge = $('statusBadge');
-const resultQuery = $('resultQuery');
-const answerSection = $('answerSection');
-const answerText = $('answerText');
-const latencyBars = $('latencyBars');
-const sourcesBox = $('sourcesBox');
-const totalTime = $('totalTime');
-const loadingOverlay = $('loadingOverlay');
+const micBtn = $('micBtn'), micTitle = $('micTitle'), micSub = $('micSub');
+const queryInput = $('queryInput'), submitBtn = $('submitBtn');
+const langSelect = $('langSelect'), sttModeTag = $('sttModeTag');
+const wave = $('wave');
+const resultCard = $('resultCard'), statusBadge = $('statusBadge'), resultQuery = $('resultQuery');
+const answerText = $('answerText'), latencyBars = $('latencyBars');
+const sourcesBox = $('sourcesBox'), hudRtt = $('hudRtt'), hudServer = $('hudServer');
 const healthBar = $('healthBar');
 
-// ---- Mode toggle ----
-document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentMode = btn.dataset.mode;
-  });
-});
+const LANG_NAMES = {
+  en: 'English', hi: 'हिन्दी', te: 'తెలుగు', bn: 'বাংলা',
+  ta: 'தமிழ்', mr: 'मराठी', gu: 'ગુજરાતી', kn: 'ಕನ್ನಡ',
+  ml: 'മലയാളം', pa: 'ਪੰਜਾਬੀ', ur: 'اردو', ne: 'नेपाली',
+  sa: 'संस्कृतम्', as: 'অসমীয়া', or: 'ଓଡ଼ିଆ'
+};
+const LANG_LOCALES = {
+  en: 'en-IN', hi: 'hi-IN', te: 'te-IN', bn: 'bn-IN',
+  ta: 'ta-IN', mr: 'mr-IN', gu: 'gu-IN', kn: 'kn-IN',
+  ml: 'ml-IN', pa: 'pa-IN', ur: 'ur-PK', ne: 'ne-NP',
+  sa: 'sa-IN', as: 'as-IN', or: 'or-IN'
+};
+const PLACEHOLDERS = {
+  en: 'Speak or type a question… e.g. What is a corporation?',
+  hi: 'बोलिए या लिखिए… जैसे: कॉर्पोरेशन क्या है?',
+  te: 'మాట్లాడండి లేదా టైప్ చేయండి…',
+  bn: 'বলুন বা লিখুন…',
+  ta: 'பேசுங்கள் அல்லது டைப் செய்யுங்கள்…',
+  mr: 'बोला किंवा टाइप करा…',
+  gu: 'બોલો અથવા ટાઇપ કરો…',
+  kn: 'ಮಾತನಾಡಿ ಅಥವಾ ಟೈಪ್ ಮಾಡಿ…',
+  ml: 'സംസാരിക്കൂ അല്ലെങ്കിൽ ടൈപ്പ് ചെയ്യൂ…',
+  pa: 'ਬੋਲੋ ਜਾਂ ਟਾਈਪ ਕਰੋ…',
+  ur: 'بولیں یا ٹائپ کریں…',
+  ne: 'बोल्नुहोस् वा टाइप गर्नुहोस्…',
+  sa: 'वदत वा टाइप कुरु…',
+  as: 'কথা কোৱা বা টাইপ কৰা…',
+  or: 'କୁହନ୍ତୁ କିମ୍ବା ଟାଇପ୍ କରନ୍ତୁ…',
+};
+const BUDGET_MS = 200, SOFT_MS = 300;
 
-// ---- Health check ----
-fetch('/api/health').then(r => r.json()).then(d => {
-  const items = [
-    { label: `STT: ${d.stt_provider}`, ok: d.stt_provider !== 'blocked' },
-    { label: `Generation: ${d.generation_provider}`, ok: d.deep_ready },
-    { label: `Corpus: ${d.corpus_records} records`, ok: d.corpus_records > 0 },
-    { label: `Chunks: ${d.corpus_chunks}`, ok: d.corpus_chunks > 0 },
-    { label: `Default: ${d.default_mode}`, ok: true },
-  ];
-  healthBar.innerHTML = items.map(i =>
-    `<div class="health-item"><div class="health-dot${i.ok ? '' : ' off'}"></div>${i.label}</div>`
-  ).join('');
-}).catch(() => {
-  healthBar.innerHTML = '<div class="health-item"><div class="health-dot off"></div>API unreachable</div>';
-});
+let currentLang = 'en';
 
-// ---- Sample queries ----
-document.querySelectorAll('.sample-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    textInput.value = chip.dataset.q;
-    submitText(chip.dataset.q);
-  });
-});
+/* ---- marquee content ---- */
+(() => {
+  const items = ['speak', 'retrieve', 'ground', 'guardrail', 'chunk', 'hybrid', 'bm25', 'tf-idf', 'extractive', 'ship', '#ragingoa', 'no llm in the hot path', 'under 200ms', '4 languages', 'multi-strategy'];
+  const half = items.map((t, i) => `<span class="${i % 3 === 2 ? 'y' : ''}">${t} ✳</span>`).join('');
+  $('marqueeTrack').innerHTML = half + half;   // duplicated for the seamless loop
+})();
 
-// ---- Text submit ----
-function submitText(query) {
-  if (!query || !query.trim()) return;
-  loadingOverlay.classList.add('visible');
-  fetch('/api/query/text', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: query.trim(), mode: currentMode })
-  })
-  .then(r => r.json())
-  .then(renderResult)
-  .catch(err => renderResult({
-    status: 'error', query_text: query, error: err.message,
-    total_ms: 0, timings: {}, retrieved_sources: []
-  }))
-  .finally(() => loadingOverlay.classList.remove('visible'));
+/* ---------------- Live browser STT ---------------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let listening = false;
+let finalTranscript = '';
+
+function setListening(on) {
+  listening = on;
+  micBtn.classList.toggle('listening', on);
+  micBtn.textContent = on ? '⏹' : '🎙';
+  wave.classList.toggle('on', on);
+  micSub.classList.toggle('live', on);
+  $('pipe-mic').classList.toggle('lit', on);
+  if (on) {
+    micTitle.textContent = 'Listening…';
+    micSub.textContent = 'Speak now. Tap the mic again when you\'re done, then hit Submit.';
+  } else {
+    micTitle.textContent = 'Voice-first query';
+    micSub.textContent = finalTranscript
+      ? 'Transcript ready — hit Submit to retrieve.'
+      : 'Tap the mic and speak — your words appear here live. Tap again when done, then hit Submit.';
+  }
 }
 
-sendBtn.addEventListener('click', () => submitText(textInput.value));
-textInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitText(textInput.value);
+function startListening() {
+  finalTranscript = '';
+  recognition = new SR();
+  recognition.lang = LANG_LOCALES[currentLang];
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalTranscript += t + ' ';
+      else interim += t;
+    }
+    queryInput.value = (finalTranscript + interim).trim();
+  };
+  recognition.onend = () => { if (listening) { try { recognition.start(); } catch (_) {} } };
+  recognition.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      stopListening();
+      autoFallback();
+      return;
+    }
+    // 'no-speech' etc: onend restarts if still listening
+  };
+  try { recognition.start(); setListening(true); }
+  catch (err) { micSub.textContent = 'Could not start speech recognition: ' + err.message; }
+}
+
+function stopListening() {
+  if (recognition) { try { recognition.stop(); } catch (_) {} }
+  queryInput.value = finalTranscript.trim() || queryInput.value;
+  setListening(false);
+}
+
+micBtn.addEventListener('click', () => {
+  if (!SR || !recognition) return startFallbackRecording();
+  listening ? stopListening() : startListening();
 });
 
-// ---- Voice record ----
-recBtn.addEventListener('click', async () => {
-  if (!recording) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: 'audio/webm' });
-        sendVoice(blob);
-        stream.getTracks().forEach(t => t.stop());
-      };
-      mediaRecorder.start();
-      recording = true;
-      recBtn.classList.add('recording');
-      recBtn.textContent = '⏹';
-      recLabel.textContent = 'Listening... tap to stop';
-      recLabel.classList.add('active');
-    } catch (err) {
-      recLabel.textContent = 'Mic access denied: ' + err.message;
-    }
-  } else {
-    mediaRecorder.stop();
-    recording = false;
-    recBtn.classList.remove('recording');
-    recBtn.textContent = '🎙';
-    recLabel.textContent = 'Processing...';
-    recLabel.classList.remove('active');
+/* Auto-fallback: if browser STT fails, switch to server recording */
+function autoFallback() {
+  if (listening) stopListening();
+  sttModeTag.textContent = 'stt: server (auto-fallback)';
+  startFallbackRecording();
+}
+
+/* Language switch mid-session: restart recognizer in the new locale */
+langSelect.addEventListener('change', () => {
+  currentLang = langSelect.value;
+  queryInput.placeholder = PLACEHOLDERS[currentLang];
+  if (listening && recognition) {
+    recognition.onend = null;                    // don't auto-restart in old lang
+    try { recognition.stop(); } catch (_) {}
+    finalTranscript = queryInput.value ? queryInput.value + ' ' : '';
+    recognition.lang = LANG_LOCALES[currentLang];
+    try { recognition.start(); } catch (_) {}
   }
 });
 
-function sendVoice(blob) {
-  loadingOverlay.classList.add('visible');
-  recLabel.textContent = 'Transcribing & retrieving...';
+/* -------- Fallback: record + upload (browsers without live STT) -------- */
+let mediaRecorder, audioChunks = [], fallbackRecording = false;
+
+function startFallbackRecording() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      sendVoiceFallback(blob);
+    };
+    mediaRecorder.start();
+    fallbackRecording = true;
+    setListening(true);
+    sttModeTag.textContent = 'stt: server (fallback)';
+    micSub.textContent = 'Recording… tap again to stop and transcribe on the server.';
+  }).catch(err => { micSub.textContent = 'Mic access denied: ' + err.message; });
+}
+
+function sendVoiceFallback(blob) {
+  submitBtn.disabled = true;
   const form = new FormData();
   form.append('file', blob, 'query.webm');
-  fetch(`/api/query/voice?mode=${currentMode}`, { method: 'POST', body: form })
+  fetch(`/api/query/voice?mode=fast&language=${currentLang}`, { method: 'POST', body: form })
     .then(r => r.json())
-    .then(d => {
-      renderResult(d);
-      recLabel.textContent = 'Tap to record another question';
-    })
-    .catch(err => {
-      renderResult({
-        status: 'error', query_text: '(voice)', error: err.message,
-        total_ms: 0, timings: {}, retrieved_sources: []
-      });
-      recLabel.textContent = 'Tap to try again';
-    })
-    .finally(() => loadingOverlay.classList.remove('visible'));
+    .then(d => { renderResult(d, null); })
+    .catch(err => renderResult({ status: 'error', query_text: '(voice)', error: err.message, timings: {}, retrieved_sources: [] }, null))
+    .finally(() => { submitBtn.disabled = false; fallbackRecording = false; });
 }
 
-// ---- Render result ----
-function renderResult(data) {
+if (!SR) {
+  sttModeTag.textContent = 'live stt: unavailable → server fallback';
+  micSub.textContent = 'This browser has no live speech recognition — tapping the mic records and transcribes on the server instead.';
+}
+
+/* ---------------- Submit → retrieval ---------------- */
+async function submitQuery() {
+  const q = queryInput.value.trim();
+  if (!q) return;
+  if (listening) stopListening();
+  submitBtn.disabled = true;
+  const t0 = performance.now();
+  try {
+    const r = await fetch('/api/query/text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q, mode: 'fast', language: currentLang })
+    });
+    const data = await r.json();
+    const rtt = performance.now() - t0;
+    renderResult(data, rtt);
+  } catch (err) {
+    renderResult({ status: 'error', query_text: q, error: err.message, timings: {}, retrieved_sources: [] }, null);
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+submitBtn.addEventListener('click', submitQuery);
+queryInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuery(); });
+
+document.querySelectorAll('.sample-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    langSelect.value = chip.dataset.lang || 'hi';
+    currentLang = langSelect.value;
+    queryInput.placeholder = PLACEHOLDERS[currentLang];
+    queryInput.value = chip.dataset.q;
+    submitQuery();
+  });
+});
+
+/* ---------------- Render ---------------- */
+const stageLabels = {
+  stt: '🎙 STT (server)',
+  retrieval: '🔍 retrieval',
+  'generation[fast]': '✨ answer synthesis',
+  'generation[deep]': '🧠 LLM (deep)',
+  guardrail_unsafe_input: '🛡 unsafe check',
+  guardrail_off_topic: '🛡 relevance check',
+  guardrail_grounding: '🛡 grounding check',
+};
+const stageColors = { stt: 'stt', retrieval: 'retrieval', 'generation[fast]': 'generation', 'generation[deep]': 'generation' };
+const PIPE_BY_STAGE = {
+  guardrail_unsafe_input: 'pipe-guard1', retrieval: 'pipe-retrieve',
+  guardrail_off_topic: 'pipe-guard2', 'generation[fast]': 'pipe-gen', 'generation[deep]': 'pipe-gen', stt: 'pipe-mic',
+};
+
+function rttColor(ms) { return ms < BUDGET_MS ? 'var(--yellow)' : ms < SOFT_MS ? '#fff' : 'var(--pink)'; }
+
+function renderResult(data, rttMs) {
   resultCard.classList.add('visible');
+  answerText.style.color = '';
 
-  // Status badge
   statusBadge.className = 'badge ' + data.status;
-  statusBadge.textContent = data.status === 'ok' ? '✓ Answered' :
-                             data.status === 'refused' ? '⚠ Refused' : '✗ Error';
-
-  // Query
+  const langLabel = data.language ? ` [${LANG_NAMES[data.language] || data.language}]` : '';
+  statusBadge.textContent = (data.status === 'ok' ? '✓ Answered' :
+                             data.status === 'refused' ? '⚠ Guardrail: Refused' : '✗ Error') + langLabel;
   resultQuery.textContent = data.query_text || '';
 
-  // Answer
-  if (data.status === 'ok') {
-    answerSection.style.display = 'block';
-    answerText.textContent = data.answer || '(empty)';
-  } else if (data.status === 'refused') {
-    answerSection.style.display = 'block';
-    answerText.textContent = data.refusal_reason || 'No reason given';
-    answerText.style.color = 'var(--warn)';
+  if (data.status === 'ok') answerText.textContent = data.answer || '(empty)';
+  else if (data.status === 'refused') { answerText.textContent = data.refusal_reason || 'No reason given'; answerText.style.color = 'var(--pink)'; }
+  else { answerText.textContent = data.error || 'Unknown error'; answerText.style.color = 'var(--pink)'; }
+
+  // HUD: client round-trip is the number that must sit under the budget.
+  const serverTotal = data.total_ms || 0;
+  if (rttMs != null) {
+    hudRtt.textContent = rttMs.toFixed(1);
+    hudRtt.style.color = rttColor(rttMs);
+    hudServer.innerHTML = `server pipeline: <b>${serverTotal.toFixed(1)} ms</b> · budget ${BUDGET_MS} ms` +
+      (rttMs < BUDGET_MS ? ' · <b>under budget ✓</b>' : serverTotal < 150 ? ' · <b>server under 150ms ✓</b>' : '');
   } else {
-    answerSection.style.display = 'block';
-    answerText.textContent = data.error || 'Unknown error';
-    answerText.style.color = 'var(--err)';
+    hudRtt.textContent = serverTotal >= 1000 ? (serverTotal / 1000).toFixed(2) + 's' : serverTotal.toFixed(1);
+    hudRtt.style.color = rttColor(serverTotal);
+    hudServer.innerHTML = `server pipeline incl. server STT · budget ${BUDGET_MS} ms<br>server target: &lt;150 ms (live STT browsers skip the STT hop)`;
   }
 
-  // Latency bars
   const timings = data.timings || {};
-  const maxMs = Math.max(...Object.values(timings), 1);
-  const stageLabels = {
-    stt: '🎙 STT',
-    retrieval: '🔍 Retrieval',
-    generation: '✨ Generation',
-    'generation[fast]': '✨ Fast Gen',
-    'generation[deep]': '🧠 Deep Gen',
-    guardrail_unsafe_input: '🛡️ Unsafe check',
-    guardrail_off_topic: '🛡️ Off-topic check',
-    guardrail_grounding: '🛡️ Grounding check',
-  };
-  const stageColors = {
-    stt: 'stt',
-    retrieval: 'retrieval',
-    generation: 'generation',
-    'generation[fast]': 'generation',
-    'generation[deep]': 'generation',
-  };
-
-  const stages = Object.entries(timings).filter(([_, v]) => v > 0.005);
-  if (stages.length > 0) {
-    latencyBars.innerHTML = stages.map(([stage, ms]) => {
-      const pct = Math.max((ms / maxMs) * 100, 1.5);
-      const colorClass = stageColors[stage] || 'guardrail';
-      const label = stageLabels[stage] || stage;
-      return `<div class="latency-row">
-        <span class="latency-label">${label}</span>
-        <div class="latency-track">
-          <div class="latency-fill ${colorClass}" style="width:${pct}%"></div>
-        </div>
-        <span class="latency-value">${ms >= 1000 ? (ms/1000).toFixed(2) + 's' : ms.toFixed(1) + 'ms'}</span>
+  const stages = Object.entries(timings).filter(([, v]) => v > 0.005);
+  if (stages.length) {
+    const maxMs = Math.max(...stages.map(([, v]) => v), 1);
+    
+    // Render chart
+    const chartColors = { stt: 'var(--pink)', retrieval: 'var(--green)', 'generation[fast]': 'var(--yellow)', 'generation[deep]': 'var(--yellow)' };
+    $('latencyChart').innerHTML = stages.map(([stage, ms]) => {
+      const height = Math.max((ms / Math.max(maxMs, serverTotal || 1)) * 100, 2);
+      return `<div class="latency-chart-bar">
+        <div class="latency-chart-value">${ms >= 1000 ? (ms/1000).toFixed(1)+'s' : ms.toFixed(1)}</div>
+        <div class="latency-chart-fill" style="height:${height}%;background:${chartColors[stage] || 'rgba(20,19,15,.3)'}"></div>
+        <div class="latency-chart-label">${stageLabels[stage]?.replace(/^[^ ]+ /, '') || stage}</div>
       </div>`;
     }).join('');
+    
+    // Render bars
+    latencyBars.innerHTML = stages.map(([stage, ms]) => {
+      const pct = Math.max((ms / maxMs) * 100, 1.5);
+      return `<div class="latency-row">
+        <span class="latency-label">${stageLabels[stage] || stage}</span>
+        <div class="latency-track"><div class="latency-fill ${stageColors[stage] || 'guardrail'}" style="width:${pct}%"></div></div>
+        <span class="latency-value">${ms >= 1000 ? (ms / 1000).toFixed(2) + 's' : ms.toFixed(1) + 'ms'}</span>
+      </div>`;
+    }).join('');
+  } else {
+    $('latencyChart').innerHTML = '';
+    latencyBars.innerHTML = '';
   }
 
-  // Total time
-  const total = data.total_ms || 0;
-  totalTime.textContent = total >= 1000 ? (total/1000).toFixed(2) + ' s' : total.toFixed(1) + ' ms';
-  totalTime.style.color = total < 200 ? 'var(--ok)' : total < 1000 ? 'var(--warn)' : 'var(--text)';
-
-  // Sources
   const sources = data.retrieved_sources || [];
-  if (sources.length > 0 && data.status !== 'error') {
-    sourcesBox.innerHTML = sources.map((s, i) =>
-      `<div class="source-item">
+  sourcesBox.innerHTML = sources.length && data.status !== 'error'
+    ? sources.map((s, i) => `<div class="source-item">
         <div class="source-meta">
-          <span class="source-id">${s.chunk_id || 'chunk-' + (i+1)}</span>
+          <span class="source-id">${s.chunk_id || 'chunk-' + (i + 1)}</span>
           <span class="source-score">score ${s.score}</span>
         </div>
         <div class="source-text">${s.text}</div>
-      </div>`
-    ).join('');
-  } else {
-    sourcesBox.innerHTML = '';
-  }
+      </div>`).join('')
+    : '';
 
-  // Scroll to result
+  // briefly light up the pipeline steps that ran
+  Object.values(PIPE_BY_STAGE).forEach(id => $(id).classList.remove('lit'));
+  Object.keys(timings).forEach(st => { const el = PIPE_BY_STAGE[st]; if (el) $(el).classList.add('lit'); });
+  setTimeout(() => Object.values(PIPE_BY_STAGE).forEach(id => $(id).classList.remove('lit')), 2500);
+
   resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Populate chunk views
+  renderChunkViews(data.retrieved_sources || []);
 }
+
+/* ---------------- Chunk Views ---------------- */
+let currentChunkView = 'metadata';
+
+function renderChunkViews(sources) {
+  const content = $('chunkViewContent');
+  if (!sources.length) { content.innerHTML = '<div style="color:rgba(20,19,15,.5)">No chunks to display</div>'; return; }
+  
+  // Group sources by strategy (metadata_aware, sentence, hybrid)
+  const groups = { metadata: [], sentence: [], hybrid: [] };
+  sources.forEach(s => {
+    const id = s.chunk_id || '';
+    if (id.includes('::passage')) groups.metadata.push(s);
+    else if (id.includes('::sent')) groups.sentence.push(s);
+    else if (id.includes('::fixed')) groups.hybrid.push(s);
+    else groups.metadata.push(s); // default to metadata
+  });
+  
+  // Render based on current view
+  const viewGroups = {
+    metadata: { label: 'Metadata-Aware (passage-level)', items: groups.metadata },
+    sentence: { label: 'Sentence Windows (3-sentence chunks)', items: groups.sentence },
+    hybrid: { label: 'Hybrid Fixed-Size (200-char windows)', items: groups.hybrid },
+  };
+  
+  const view = viewGroups[currentChunkView];
+  if (!view.items.length) {
+    content.innerHTML = `<div style="color:rgba(20,19,15,.5)">No ${currentChunkView} chunks in this result. Try a query that matches different chunk boundaries.</div>`;
+    return;
+  }
+  
+  content.innerHTML = view.items.map((s, i) => `
+    <div class="chunk-view-item">
+      <div class="chunk-view-meta">${view.label} · chunk ${i + 1}</div>
+      <div>${s.text}</div>
+    </div>
+  `).join('');
+}
+
+// Tab click handlers
+document.querySelectorAll('.chunk-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.chunk-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentChunkView = tab.dataset.view;
+    // Re-render with current sources
+    const sources = [];
+    document.querySelectorAll('.source-item').forEach(el => {
+      sources.push({ text: el.querySelector('.source-text')?.textContent || '', chunk_id: el.querySelector('.source-id')?.textContent || '' });
+    });
+    renderChunkViews(sources);
+  });
+});
+
+/* ---------------- Health ---------------- */
+fetch('/api/health').then(r => r.json()).then(d => {
+  const corpus = Object.values(d.languages || {}).reduce((a, l) => a + (l.records || 0), 0);
+  const chunks = Object.values(d.languages || {}).reduce((a, l) => a + (l.chunks || 0), 0);
+  const langCount = Object.keys(d.languages || {}).length;
+  $('statChunks').textContent = chunks >= 1e6 ? (chunks / 1e6).toFixed(2) + 'M+' : chunks.toLocaleString();
+  $('statRecords').textContent = corpus >= 1000 ? Math.round(corpus / 1000) + 'K+' : corpus.toLocaleString();
+  if (langCount) $('statLangs').textContent = langCount;
+  
+  // Show language details
+  const langNames = Object.entries(d.languages || {}).map(([k, v]) => `${v.name || k}`).join(', ');
+  const items = [
+    { label: `indexed on ${corpus.toLocaleString()} records · ${chunks.toLocaleString()} chunks`, ok: corpus > 0 },
+    { label: `languages: ${langNames || 'none'}`, ok: langCount > 0 },
+    { label: `STT: ${d.stt_provider} · generation: ${d.generation_provider || 'blocked'}`, ok: d.stt_provider !== 'blocked' },
+    { label: `multi-strategy chunking: metadata + sentence + hybrid`, ok: true },
+  ];
+  healthBar.innerHTML = items.map(i =>
+    `<div class="health-item"><div class="health-dot${i.ok ? '' : ' off'}"></div>${i.label}</div>`).join('');
+}).catch(() => {
+  healthBar.innerHTML = '<div class="health-item"><div class="health-dot off"></div>API unreachable</div>';
+});
 </script>
 </body>
 </html>

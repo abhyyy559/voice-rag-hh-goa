@@ -25,7 +25,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from pipeline.config import PipelineConfig
+from pipeline.config import PipelineConfig, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
 from pipeline.harness import VoiceRAGHarness, Status
 from pipeline.stt import resolve_stt_provider
 from pipeline.generation import resolve_generation_provider
@@ -34,14 +34,86 @@ from data.load_dataset import load_dataset_with_fallback
 app = FastAPI(title="Voice RAG — HH Goa Task 2")
 
 _cfg = PipelineConfig()
-# CORPUS_LIMIT caps the index size (0 = load the COMPLETE dataset, the full
-# 97,941-record Hindi validation parquet). The deployed Vercel app MUST set
-# a cap (e.g. 2000) — building the full ~1M-chunk index there OOMs/timeouts
-# on serverless. See NEEDS_HUMAN.md.
-_corpus_limit = int(os.getenv("CORPUS_LIMIT", "0") or "0")
-_corpus = load_dataset_with_fallback(prefer_real=True, limit=_corpus_limit or None)
-_harness = VoiceRAGHarness.from_corpus(_corpus, _cfg)
+# CORPUS_LIMIT caps the index size per language (0 = load the COMPLETE dataset).
+# For fast startup, default to 500 records. Set CORPUS_LIMIT=0 for full dataset.
+_corpus_limit = int(os.getenv("CORPUS_LIMIT", "500") or "500")
+
+# Lazy-load harnesses: only build the default language at startup;
+# others are built on-demand the first time they're requested.
+import time as _time
+import threading as _threading
+
+t_start_init = _time.perf_counter()
+_harnesses: dict[str, VoiceRAGHarness] = {}
+_language_stats: dict[str, dict] = {}
+_language_locks: dict[str, _threading.Lock] = {}
+_language_loading: dict[str, bool] = {}
+
+# --- Load ONLY the default language at startup for fast cold start ---
+def _load_language(lang_code: str) -> None:
+    """Build a harness for a single language (thread-safe, idempotent).
+    Tries prebuilt cache first for instant startup."""
+    if lang_code in _harnesses:
+        return
+    lock = _language_locks.setdefault(lang_code, _threading.Lock())
+    with lock:
+        if lang_code in _harnesses:  # double-check after acquiring lock
+            return
+        _language_loading[lang_code] = True
+        try:
+            t0 = _time.perf_counter()
+            # Try prebuilt cache first: load chunks and rebuild index (~200ms)
+            import pickle as _pickle
+            _cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'cache')
+            _prebuilt = os.path.join(_cache_dir, 'prebuilt_harness.pkl')
+            if lang_code == DEFAULT_LANGUAGE and os.path.exists(_prebuilt):
+                with open(_prebuilt, 'rb') as _f:
+                    _cached = _pickle.load(_f)
+                # Rebuild index from cached chunks (fast, ~200ms)
+                harness = VoiceRAGHarness(_cached['chunks'], _cfg)
+                harness.cfg.guardrails.stopwords = _cached.get('stopwords', frozenset())
+                _harnesses[lang_code] = harness
+                _language_stats[lang_code] = {
+                    'records': 0,
+                    'chunks': len(harness.chunks),
+                }
+                ms = (_time.perf_counter() - t0) * 1000
+                print(f'[init] Loaded {lang_code} from CACHE: {len(harness.chunks)} chunks ({ms:.0f}ms)')
+                return
+            corpus = load_dataset_with_fallback(
+                prefer_real=True, limit=_corpus_limit or None, language=lang_code
+            )
+            if corpus:
+                harness = VoiceRAGHarness.from_corpus(corpus, _cfg)
+                harness.save_cache()
+                _harnesses[lang_code] = harness
+                _language_stats[lang_code] = {
+                    "records": len(corpus),
+                    "chunks": len(harness.chunks),
+                }
+                ms = (_time.perf_counter() - t0) * 1000
+                print(f"[init] Loaded {lang_code}: {len(corpus)} records, {len(harness.chunks)} chunks ({ms:.0f}ms)")
+            else:
+                print(f"[init] WARNING: {lang_code} returned 0 records, skipping")
+        except Exception as e:
+            print(f"[init] WARNING: Failed to load {lang_code}: {e}")
+        finally:
+            _language_loading[lang_code] = False
+
+# Fully lazy: don't load anything at import time. First request triggers load.
+# This prevents Vercel serverless from timing out during cold start.
+_harness = None  # loaded on first request
 _stt_provider = resolve_stt_provider(_cfg.stt)
+
+
+def _ensure_default_loaded():
+    """Load the default language harness on first request (lazy init)."""
+    global _harness
+    if _harness is not None:
+        return
+    if DEFAULT_LANGUAGE not in _harnesses:
+        _load_language(DEFAULT_LANGUAGE)
+    _harness = _harnesses.get(DEFAULT_LANGUAGE) or next(iter(_harnesses.values()), None)
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -50,6 +122,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 class TextQuery(BaseModel):
     query: str
     mode: str = "fast"  # "fast" = extractive (sub-ms) | "deep" = LLM (Groq/Anthropic)
+    language: str = DEFAULT_LANGUAGE  # ISO-639-1: "hi", "te", "bn"
 
 
 def _serialize(result, mode: str = "fast") -> dict:
@@ -60,6 +133,7 @@ def _serialize(result, mode: str = "fast") -> dict:
         "refusal_reason": result.refusal_reason,
         "error": result.error,
         "mode": mode,
+        "language": getattr(result, "language", DEFAULT_LANGUAGE),
         "total_ms": round(result.total_ms, 2),
         "timings": result.timing_breakdown(),
         "retrieved_sources": [
@@ -82,15 +156,25 @@ def index():
 
 @app.get("/api/health")
 def health():
+    _ensure_default_loaded()
     return {
         "status": "ok",
-        "corpus_records": len(_corpus),
-        "corpus_chunks": len(_harness.chunks),
         "stt_provider": _stt_provider,
         "generation_provider": resolve_generation_provider(_cfg.generation) or "blocked",
         "deep_ready": bool(resolve_generation_provider(_cfg.generation)),
         "default_mode": _cfg.generation.default_mode,
         "generation": "ready" if resolve_generation_provider(_cfg.generation) else "blocked (set GROQ_API_KEY or ANTHROPIC_API_KEY)",
+        "languages": {
+            code: {
+                "name": SUPPORTED_LANGUAGES[code],
+                "loaded": code in _harnesses,
+                "loading": _language_loading.get(code, False),
+                "records": _language_stats.get(code, {}).get("records", 0),
+                "chunks": _language_stats.get(code, {}).get("chunks", 0),
+            }
+            for code in SUPPORTED_LANGUAGES
+        },
+        "default_language": DEFAULT_LANGUAGE,
     }
 
 
@@ -99,19 +183,39 @@ def query_text(payload: TextQuery):
     if not payload.query.strip():
         raise HTTPException(400, "empty query")
     mode = payload.mode if payload.mode in ("fast", "deep") else "fast"
+    lang = payload.language if payload.language in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
     if mode == "deep" and not resolve_generation_provider(_cfg.generation):
         raise HTTPException(503, "deep mode unavailable — no GROQ_API_KEY or ANTHROPIC_API_KEY set")
-    result = _harness.run_text_query(payload.query, mode=mode)
+    # Lazy-load on first request
+    _ensure_default_loaded()
+    if lang not in _harnesses:
+        _load_language(lang)
+    harness = _harnesses.get(lang, _harness)
+    if not harness:
+        raise HTTPException(503, f"language '{lang}' failed to load — try {DEFAULT_LANGUAGE}")
+    result = harness.run_text_query(payload.query, mode=mode)
+    result.language = lang
     return _serialize(result, mode)
 
 
 @app.post("/api/query/voice")
-async def query_voice(file: UploadFile = File(...), mode: str = "fast"):
+async def query_voice(file: UploadFile = File(...), mode: str = "fast", language: str = DEFAULT_LANGUAGE):
     audio_bytes = await file.read()
     if not audio_bytes:
         raise HTTPException(400, "empty audio file")
     mode = mode if mode in ("fast", "deep") else "fast"
+    lang = language if language in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
     if mode == "deep" and not resolve_generation_provider(_cfg.generation):
         raise HTTPException(503, "deep mode unavailable — no GROQ_API_KEY or ANTHROPIC_API_KEY set")
-    result = _harness.run_voice_query(audio_bytes, filename=file.filename or "query.wav", mode=mode)
+    # Lazy-load on first request
+    _ensure_default_loaded()
+    if lang not in _harnesses:
+        _load_language(lang)
+    harness = _harnesses.get(lang, _harness)
+    if not harness:
+        raise HTTPException(503, f"language '{lang}' failed to load — try {DEFAULT_LANGUAGE}")
+    # Update STT language for voice queries
+    _cfg.stt.language_code = f"{lang}-IN" if lang != "bn" else "bn-IN"
+    result = harness.run_voice_query(audio_bytes, filename=file.filename or "query.wav", mode=mode)
+    result.language = lang
     return _serialize(result, mode)

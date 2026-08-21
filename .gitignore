@@ -11,3 +11,4 @@ data/audio/
 .DS_Store
 
 .vercel
+.env*

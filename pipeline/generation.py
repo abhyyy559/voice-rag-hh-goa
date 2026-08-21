@@ -117,7 +117,7 @@ def generate_answer_mock(query: str, results: List[RetrievalResult], cfg: Genera
 # ---------------------------------------------------------------------------
 
 _SENT_SPLIT_RE = re.compile(r"(?<=[।.!?])\s+")
-_WORD_RE = re.compile(r"[a-zA-Z\u0900-\u097F]+")
+_WORD_RE = re.compile(r"[a-zA-Z\u0900-\u097F\u0980-\u09FF\u0C00-\u0C7F]+")  # Latin + Devanagari + Bengali + Telugu
 
 
 def _content_words(text: str) -> set:
@@ -131,34 +131,124 @@ def _split_sentences(text: str) -> List[str]:
 def generate_answer_extractive(query: str, results: List[RetrievalResult], cfg: GenerationConfig) -> GenerationResult:
     """Deterministic extractive QA: scores every sentence in the top retrieved
     passages by content-word overlap with the query and returns the best 1-3
-    sentences (highest scoring first, capped by max_sentences). Falls back to
-    the lead sentence of the top passage when no sentence has any overlap —
-    the passage was already deemed relevant by retrieval + the off-topic
-    guardrail, so its lead sentence is the safest grounded summary."""
+    sentences (highest scoring first, capped by max_sentences).
+
+    Quality gates:
+      1. Only sentences with at least min_overlap content-word matches are
+         considered (prevents surfacing topically-unrelated sentences).
+      2. The BEST sentence must have overlap >= min_best_overlap relative to
+         the query — if even the best match is weak, we refuse instead of
+         returning a low-quality answer.
+      3. Lead-sentence fallback is ONLY used when the top passage score is
+         above a quality floor (i.e., the passage is genuinely relevant,
+         not just a weak lexical match).
+
+    Returns an empty answer (which the harness treats as a refusal) when no
+    sentence meets the quality bar."""
     max_sentences = getattr(cfg, "extractive_max_sentences", 3)
     min_sentence_words = 3   # skip fragments like "See also." / "वेबसाइट।"
     if not results:
-        return GenerationResult(answer="", raw_response={"extractive": True})
+        return GenerationResult(answer="", raw_response={"extractive": True, "reason": "no results"})
 
     q_words = _content_words(query)
+    n_query_words = len(q_words)
+    # Short queries (≤3 words) need at least 1 match; longer queries need 2.
+    min_overlap = 1 if n_query_words <= 3 else 2
+    # Minimum overlap for the BEST sentence — prevents weak matches from
+    # being surfaced as answers. For a 5-word query with 3 content words,
+    # we want at least 1 strong match in the best sentence.
+    min_best_overlap = max(1, n_query_words // 3)
+
+    # Question-type detection: certain sentence patterns directly answer
+    # specific question types (e.g., "X is a Y" answers "What is X?").
+    q_lower = query.lower()
+    is_what_q = q_lower.startswith(("what is", "what are", "define ", "definition of"))
+    is_how_many_q = any(q_lower.startswith(w) for w in ["how many", "how much", "how often"])
+    is_how_q = q_lower.startswith("how ")
+    is_where_q = any(q_lower.startswith(w) for w in ["where is", "where are", "where do"])
+    is_when_q = any(q_lower.startswith(w) for w in ["when is", "when was", "when did"])
+    is_who_q = any(q_lower.startswith(w) for w in ["who is", "who was", "who are"])
+    is_why_q = any(q_lower.startswith(w) for w in ["why did", "why do", "why is", "why does"])
+
     scored: List[tuple] = []  # (score, passage_rank, sentence_idx, sentence)
     for rank, r in enumerate(results[:3]):  # top-3 passages only — keeps it sub-ms
         for si, sent in enumerate(_split_sentences(r.chunk.text)):
             words = _WORD_RE.findall(sent)
             if len(words) < min_sentence_words:
                 continue
-            overlap = len(q_words & set(w.lower() for w in words))
-            # small passage-rank tiebreak: earlier passages win ties
-            scored.append((overlap + 1e-6 * (len(results) - rank), rank, si, sent))
+            sent_lower = sent.lower()
+            sent_words = set(w.lower() for w in words)
+            overlap = len(q_words & sent_words)
+            if overlap < min_overlap:
+                continue  # skip sentences with insufficient topical grounding
+
+            # --- Answer-quality scoring (beyond raw overlap count) ---
+            score = overlap
+
+            # Boost 1: answer-pattern match. Sentences that directly answer
+            # the question type score higher.
+            if is_what_q and re.search(r"\b(is|are|was|were)\b", sent_lower):
+                score += 0.5  # "X is a Y" pattern directly answers "What is X?"
+            if is_how_many_q and re.search(r"\b\d+\b", sent):
+                score += 0.8  # numeric answer for quantity questions
+            if is_how_q and re.search(r"\b\d+\b", sent):
+                score += 0.5  # numeric answer for how-questions
+            if is_where_q and re.search(r"\b(in|at|on|located|found)\b", sent_lower):
+                score += 0.5
+            if is_when_q and re.search(r"\b(in|on|during|since|from|year|date)\b", sent_lower):
+                score += 0.5
+            if is_who_q and re.search(r"\b(was|is|were|born|founded|created|invented)\b", sent_lower):
+                score += 0.5
+            if is_why_q and re.search(r"\b(because|due to|since|reason|allows|enables)\b", sent_lower):
+                score += 0.5
+
+            # Boost 2: sentence position — earlier sentences in a passage are
+            # more likely to contain the main answer.
+            if si == 0:
+                score += 0.3
+            elif si == 1:
+                score += 0.1
+
+            # Penalty: overly long sentences (likely lists or navigation)
+            if len(words) > 40:
+                score -= 0.5
+
+            # Boost 3: passage rank bonus
+            score_bonus = r.score if rank < len(results) else 0.0
+            score += 0.01 * score_bonus + 1e-6 * (len(results) - rank)
+
+            scored.append((score, rank, si, sent))
 
     if not scored:
+        # No sentence has even minimal keyword overlap with the query.
+        # Only use lead-sentence fallback if the top passage is genuinely
+        # relevant (score above a quality floor). Otherwise refuse.
+        top_score = results[0].score
+        if top_score < 0.35:
+            # Weak retrieval — don't guess, refuse with an honest message
+            return GenerationResult(
+                answer="",
+                raw_response={"extractive": True, "reason": "no relevant sentences found",
+                              "top_score": top_score},
+            )
+        # Top passage is reasonably relevant — use its lead sentence
         lead = _split_sentences(results[0].chunk.text)
         answer = lead[0] if lead else results[0].chunk.text[:300]
         return GenerationResult(answer=answer, raw_response={"extractive": True, "fallback": "lead"})
 
     scored.sort(key=lambda t: (-t[0], t[1], t[2]))
+    best_score = scored[0][0]
+    # Quality gate: if the best sentence's overlap is too weak relative to
+    # the query size, refuse instead of returning a low-confidence answer.
+    if n_query_words >= 3 and best_score < min_best_overlap:
+        return GenerationResult(
+            answer="",
+            raw_response={"extractive": True, "reason": "best sentence overlap too weak",
+                          "best_score": best_score, "min_required": min_best_overlap},
+        )
+
     picked = scored[:max_sentences]
-    # present in passage order (reading flow) rather than score order
+    # Present in passage order (reading flow) rather than score order
     picked.sort(key=lambda t: (t[1], t[2]))
     answer = " ".join(s for *_, s in picked)
     return GenerationResult(
