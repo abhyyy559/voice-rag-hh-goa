@@ -4,37 +4,15 @@ Everything in this file is blocked on a human. **No resubmissions allowed** — 
 
 ---
 
-## 🔴 PRIORITY 1 — STT API Key (compliance requirement, do FIRST)
+## 🔴 PRIORITY 1 — STT API Key (compliance requirement) — ✅ DONE
 
-The task spec **explicitly requires** "Use either Sarvam or ElevenLabs for voice-to-text." Without a key, the live demo falls back to Groq Whisper (which is NOT one of the two allowed providers — a judge checking literally could reject the submission).
-
-**Action:**
-1. Sign up at https://dashboard.sarvam.ai (free trial available)
-2. Get your API key
-3. Set it on Vercel:
-   ```bash
-   vercel env add SARVAM_API_KEY production
-   ```
-   Paste the key when prompted, then redeploy:
-   ```bash
-   vercel --prod
-   ```
-4. Verify the live demo shows "STT: sarvam" at https://voice-rag-hh-goa.vercel.app
-
-**Without this key, the live demo uses Groq Whisper for STT, which violates the task spec requirement for Sarvam or ElevenLabs.**
+`SARVAM_API_KEY` is set in `.env` (local) AND on Vercel — live health endpoint reports `stt_provider: sarvam`. No action needed. (To change it later: `vercel env add SARVAM_API_KEY production`, then `vercel --prod`.)
 
 ---
 
-## 🟡 PRIORITY 2 — Generation API Key (for full demo)
+## 🟡 PRIORITY 2 — Generation API Key — ✅ DONE
 
-The generation stage already has a Groq API key (set locally in `.env`). To make the live demo answer end-to-end, set it on Vercel too:
-
-```bash
-vercel env add GROQ_API_KEY production
-vercel --prod
-```
-
-Optional fallback: `ANTHROPIC_API_KEY` (uses Claude Sonnet 4-6).
+`GROQ_API_KEY` is set in `.env` AND on Vercel (`generation_provider: groq`). No action needed.
 
 ---
 
