@@ -30,7 +30,7 @@ vercel --prod --yes                                     # deploy (CLI auth'd; gi
 - Corpus bundles: `data/english_corpus.json`, `data/real_corpus.json` (hi), `data/telugu_corpus.json`. Languages fixed at exactly en/hi/te.
 - Eval-loop contract: `app/embedder.py` + `app/generator.py` (+ optional `app/config.py`). Run the suite without copying anything:
   `RAG_PROJECT_ROOT=<repo> python -m eval.runner --num-answerable 3 --num-unanswerable 3 --workers 1`
-- Docs map: `COVERAGE.md` (dataset scope, topic buckets) · `EVALUATION_RUNBOOK.md` (eval process + baselines) · `DECISIONS.md` (why each choice) · `NEEDS_HUMAN.md` (human TODO list).
+- Docs map: `EVALUATION_RUNBOOK.md` (eval process + baselines) · `COMPETITOR_ANALYSIS.md` (market recon, local-only). Internal planning docs are intentionally untracked.
 
 ## Gotchas
 

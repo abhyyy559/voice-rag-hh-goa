@@ -40,7 +40,7 @@ mic ──▶ STT ──▶ guardrails ──▶ hybrid BM25+TF-IDF retrieval �
 | hi | 2,000 | 50,011 | `data/real_corpus.json` |
 | te | 500 | 13,847 | `data/telugu_corpus.json` |
 
-Out of the ~55 GB MSMARCO-XI dataset (97,941-record validation split per language). Topic coverage + what it deliberately refuses: **`COVERAGE.md`**.
+Out of the ~55 GB MSMARCO-XI dataset (97,941-record validation split per language) — a documented, honest subset: 8k en / 2k hi / 500 te records chosen so every indexed question's gold passage is retrievable. Off-corpus questions refuse by design (try *"Who is the CM of Andhra Pradesh?"* — zero supporting passages in all 97,941 rows).
 
 ## Measured latency (100-query benchmark, production)
 
@@ -59,7 +59,7 @@ All 100 queries within the 200 ms server-side budget. First request after a lamb
 | # | Requirement | Implementation | Evidence |
 |---|---|---|---|
 | 1 | STT (Sarvam / ElevenLabs) | `pipeline/stt.py` — Sarvam `saaras:v3` primary; Chrome live-SR for zero-latency browser path; Groq Whisper fallback | `/api/health` → `stt_provider` |
-| 2 | Vast chunking | `pipeline/chunking.py` — 4 strategies (fixed / sentence / metadata-aware / hybrid), multi-strategy merged index | `tests/test_chunking.py`, `DECISIONS.md` |
+| 2 | Vast chunking | `pipeline/chunking.py` — 4 strategies (fixed / sentence / metadata-aware / hybrid), multi-strategy merged index | `tests/test_chunking.py` |
 | 3 | <200 ms end-to-end | prebuilt indexes + candidate-based hybrid search + extractive synthesis | **live:** `/api/benchmark?n=100` |
 | 4 | P50/P70/P100 analytics | `benchmark/latency_100.py` (offline) + `/api/benchmark` (live) | `benchmark/results/latency_100_report.json` |
 | 5 | Harness | `pipeline/harness.py` — per-stage timing, tenacity retries, typed results, error recovery | `tests/`, stage chart in UI |
@@ -104,4 +104,4 @@ Standard harness (`BeaconBandhu/rag-local-eval-loop`) attaches natively — see 
 
 ## Docs map
 
-`COVERAGE.md` dataset scope & topics · `DECISIONS.md` engineering decisions · `NEEDS_HUMAN.md` remaining human tasks · `PRD.md`/`TASK_HANDOFF.md` original task · `AGENTS.md` contributor quick-start
+`EVALUATION_RUNBOOK.md` evaluation process & measured baseline · `AGENTS.md` contributor quick-start

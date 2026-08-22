@@ -713,9 +713,25 @@ function stopListening() {
   setListening(false);
 }
 
+/* One stopper for BOTH capture paths: live SpeechRecognition AND the
+   server-fallback MediaRecorder. Without handling the fallback here, a
+   running recording could never be stopped by tapping the mic again. */
+function stopAllListening() {
+  if (fallbackRecording) {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      try { mediaRecorder.stop(); } catch (_) {}   // fires onstop → uploads
+    }
+    fallbackRecording = false;
+    setListening(false);
+    return;
+  }
+  if (listening) stopListening();
+}
+
 micBtn.addEventListener('click', () => {
-  if (!SR || !recognition) return startFallbackRecording();
-  listening ? stopListening() : startListening();
+  if (listening) { stopAllListening(); return; }   // tap #2 always stops
+  if (!SR) { startFallbackRecording(); return; }   // no live SR in this browser
+  startListening();                                 // Chrome/Edge live path
 });
 
 /* Auto-fallback: if browser STT fails, switch to server recording */
@@ -742,6 +758,7 @@ langSelect.addEventListener('change', () => {
 let mediaRecorder, audioChunks = [], fallbackRecording = false;
 
 function startFallbackRecording() {
+  if (fallbackRecording || listening) return;   // never stack a second recorder
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
