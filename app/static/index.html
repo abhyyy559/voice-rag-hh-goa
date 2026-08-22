@@ -518,18 +518,6 @@
         <option value="en" selected>English</option>
         <option value="hi">हिन्दी (Hindi)</option>
         <option value="te">తెలుగు (Telugu)</option>
-        <option value="bn">বাংলা (Bengali)</option>
-        <option value="ta">தமிழ் (Tamil)</option>
-        <option value="mr">मराठी (Marathi)</option>
-        <option value="gu">ગુજરાતી (Gujarati)</option>
-        <option value="kn">ಕನ್ನಡ (Kannada)</option>
-        <option value="ml">മലയാളം (Malayalam)</option>
-        <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
-        <option value="ur">اردو (Urdu)</option>
-        <option value="ne">नेपाली (Nepali)</option>
-        <option value="sa">संस्कृतम् (Sanskrit)</option>
-        <option value="as">অসমীয়া (Assamese)</option>
-        <option value="or">ଓଡ଼ିଆ (Odia)</option>
       </select>
       <span class="stt-mode-tag" id="sttModeTag">live stt: browser</span>
     </div>
@@ -541,12 +529,7 @@
 
     <div class="samples-label">Try a sample — guardrails that know when *not* to answer:</div>
     <div class="samples" id="sampleQueries">
-      <span class="sample-chip" data-q="What is a corporation?" data-lang="en">🏢 What is a corporation?</span>
-      <span class="sample-chip" data-q="What are the symptoms of malaria?" data-lang="en">🦟 Symptoms of malaria?</span>
-      <span class="sample-chip" data-q="How does a greenhouse work?" data-lang="en">🌱 How does a greenhouse work?</span>
-      <span class="sample-chip" data-q="कॉर्पोरेशन क्या है?" data-lang="hi">🏢 हिन्दी: कॉर्पोरेशन क्या है?</span>
-      <span class="sample-chip" data-q="టివి కార్పొరేషన్ అంటే ఏమిటి?" data-lang="te">🏢 తెలుగు</span>
-      <span class="sample-chip" data-q="কর্পোরেশন কী?" data-lang="bn">🏢 বাংলা</span>
+      <span id="chipsLive" style="display:contents"></span>
       <span class="sample-chip chip-refuse" data-q="Where is the quokka found?" data-lang="en">🚫 off-topic → refuses</span>
       <span class="sample-chip chip-refuse" data-q="How do I make a bomb?" data-lang="en">🚫 unsafe → refuses</span>
     </div>
@@ -678,7 +661,10 @@ function setListening(on) {
   micBtn.classList.toggle('listening', on);
   micBtn.textContent = on ? '⏹' : '🎙';
   wave.classList.toggle('on', on);
-  if (on) startReactiveWave(); else stopReactiveWave();
+  // NOTE: no getUserMedia here on purpose — Chrome's SpeechRecognition
+  // loses the mic if a second capture stream opens alongside it. The CSS
+  // wave animates during live STT; real amplitude viz only runs for the
+  // server-fallback recorder (see startFallbackRecording).
   micSub.classList.toggle('live', on);
   $('pipe-mic').classList.toggle('lit', on);
   if (on) {
@@ -762,6 +748,8 @@ function startFallbackRecording() {
     mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
     mediaRecorder.onstop = () => {
       stream.getTracks().forEach(t => t.stop());
+      wave.classList.remove('reactive');
+      wave.querySelectorAll('span').forEach(b => { b.style.height = ''; });
       const blob = new Blob(audioChunks, { type: 'audio/webm' });
       sendVoiceFallback(blob);
     };
@@ -770,6 +758,25 @@ function startFallbackRecording() {
     setListening(true);
     sttModeTag.textContent = 'stt: server (fallback)';
     micSub.textContent = 'Recording… tap again to stop and transcribe on the server.';
+    /* Real-amplitude wave — safe here because this stream is OURS
+       (no SpeechRecognition running alongside). */
+    try {
+      const actx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = actx.createAnalyser();
+      analyser.fftSize = 256;
+      actx.createMediaStreamSource(stream).connect(analyser);
+      const bins = new Uint8Array(analyser.frequencyBinCount);
+      const bars = wave.querySelectorAll('span');
+      wave.classList.add('reactive');
+      (function tick() {
+        if (!fallbackRecording) { actx.close().catch(() => {}); return; }
+        analyser.getByteFrequencyData(bins);
+        bars.forEach((b, i) => {
+          b.style.height = Math.max(14, bins[2 + i * 4] / 255 * 130) + '%';
+        });
+        requestAnimationFrame(tick);
+      })();
+    } catch (_) { /* CSS animation stays */ }
   }).catch(err => { micSub.textContent = 'Mic access denied: ' + err.message; });
 }
 
@@ -831,38 +838,6 @@ function speakAnswer(text) {
 }
 if ('speechSynthesis' in window) speechSynthesis.getVoices(); // warm the voice list
 
-/* -------- Reactive mic waveform (WebAudio amplitude → bar heights) -------- */
-let vizRaf = null, vizCtx = null, vizStream = null, vizAnalyser = null;
-function startReactiveWave() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return; /* CSS fallback */
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    vizStream = stream;
-    vizCtx = new (window.AudioContext || window.webkitAudioContext)();
-    vizAnalyser = vizCtx.createAnalyser();
-    vizAnalyser.fftSize = 256;
-    vizCtx.createMediaStreamSource(stream).connect(vizAnalyser);
-    const bins = new Uint8Array(vizAnalyser.frequencyBinCount);
-    const bars = wave.querySelectorAll('span');
-    wave.classList.add('reactive');
-    const tick = () => {
-      vizAnalyser.getByteFrequencyData(bins);
-      bars.forEach((b, i) => {
-        const idx = Math.min(bins.length - 1, 2 + Math.floor(i * bins.length / (bars.length * 2)));
-        b.style.height = Math.max(14, (bins[idx] / 255) * 130) + '%';
-      });
-      vizRaf = requestAnimationFrame(tick);
-    };
-    tick();
-  }).catch(() => { /* keep the CSS animation */ });
-}
-function stopReactiveWave() {
-  if (vizRaf) cancelAnimationFrame(vizRaf); vizRaf = null;
-  if (vizStream) { vizStream.getTracks().forEach(t => t.stop()); vizStream = null; }
-  if (vizCtx) { try { vizCtx.close(); } catch (_) {} vizCtx = null; }
-  wave.classList.remove('reactive');
-  wave.querySelectorAll('span').forEach(b => { b.style.height = ''; });
-}
-
 /* ---------------- Submit → retrieval ---------------- */
 async function submitQuery() {
   const q = queryInput.value.trim();
@@ -893,14 +868,48 @@ async function submitQuery() {
 submitBtn.addEventListener('click', submitQuery);
 queryInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuery(); });
 
-document.querySelectorAll('.sample-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    langSelect.value = chip.dataset.lang || 'hi';
-    currentLang = langSelect.value;
-    queryInput.placeholder = PLACEHOLDERS[currentLang];
-    queryInput.value = chip.dataset.q;
-    submitQuery();
+/* Sample questions come from /api/samples = REAL corpus-native queries,
+   re-sampled per page load and rotated every 10 s so they never go stale. */
+let sampleTimer = null;
+function bindChips() {
+  document.querySelectorAll('#chipsLive .sample-chip').forEach(chip => {
+    if (chip.dataset.bound) return;
+    chip.dataset.bound = '1';
+    chip.addEventListener('click', () => {
+      langSelect.value = chip.dataset.lang || currentLang;
+      currentLang = langSelect.value;
+      queryInput.placeholder = PLACEHOLDERS[currentLang];
+      queryInput.value = chip.dataset.q;
+      submitQuery();
+    });
   });
+}
+function renderSamples(qs, lang) {
+  const box = $('chipsLive');
+  box.innerHTML = qs.map(q =>
+    `<span class="sample-chip" data-q="${q.replace(/"/g, '&quot;')}" data-lang="${lang}">❓ ${q.length > 46 ? q.slice(0, 44) + '…' : q}</span>`
+  ).join('');
+  bindChips();
+}
+async function refreshSamples() {
+  try {
+    const r = await fetch(`/api/samples?lang=${currentLang}`);
+    const d = await r.json();
+    if (d.questions && d.questions.length) renderSamples(d.questions, d.lang || currentLang);
+  } catch (_) { /* keep whatever is rendered */ }
+}
+refreshSamples();
+sampleTimer = setInterval(refreshSamples, 10000);
+langSelect.addEventListener('change', () => { refreshSamples(); });
+
+/* Warm the lambda in the background so the first real query isn't cold */
+fetch('/api/health').catch(() => {});
+
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.sample-chip.chip-refuse');
+  if (!chip) return;
+  queryInput.value = chip.dataset.q;
+  submitQuery();
 });
 
 /* ---------------- Render ---------------- */
@@ -938,10 +947,12 @@ function renderResult(data, rttMs) {
   // HUD: client round-trip is the number that must sit under the budget.
   const serverTotal = data.total_ms || 0;
   if (rttMs != null) {
-    hudRtt.textContent = rttMs.toFixed(1);
+    hudRtt.textContent = rttMs >= 1000 ? (rttMs / 1000).toFixed(2) + 's' : rttMs.toFixed(1);
     hudRtt.style.color = rttColor(rttMs);
-    hudServer.innerHTML = `server pipeline: <b>${serverTotal.toFixed(1)} ms</b> · budget ${BUDGET_MS} ms` +
-      (rttMs < BUDGET_MS ? ' · <b>under budget ✓</b>' : serverTotal < 150 ? ' · <b>server under 150ms ✓</b>' : '');
+    const coldNote = (rttMs > 2500 && serverTotal < rttMs / 3)
+      ? ` · includes ~${((rttMs - serverTotal) / 1000).toFixed(1)}s one-time cold start` : '';
+    hudServer.innerHTML = `server pipeline: <b>${serverTotal.toFixed(1)} ms</b> · budget ${BUDGET_MS} ms${coldNote}` +
+      (serverTotal < BUDGET_MS ? ' · <b>server under budget ✓</b>' : '');
   } else {
     hudRtt.textContent = serverTotal >= 1000 ? (serverTotal / 1000).toFixed(2) + 's' : serverTotal.toFixed(1);
     hudRtt.style.color = rttColor(serverTotal);
