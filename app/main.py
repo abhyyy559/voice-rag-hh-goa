@@ -197,9 +197,17 @@ def index():
 
 
 @app.get("/api/health")
-def health():
+def health(warm: str = ""):
     _ensure_default_loaded()
-    _warm_all_languages()   # background-load hi/te too (keepalive pattern)
+    if warm == "all":
+        # Serverless note: daemon threads die when the handler returns, so
+        # real warming must happen INSIDE a request. The page-load ping uses
+        # /api/health?warm=all and pays the one-time load cost itself.
+        for code in SUPPORTED_LANGUAGES:
+            if code not in _harnesses:
+                _load_language(code)
+    else:
+        _warm_all_languages()   # best-effort hint for long-running hosts
     return {
         "status": "ok",
         "stt_provider": _stt_provider,

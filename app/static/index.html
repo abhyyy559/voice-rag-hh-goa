@@ -902,8 +902,9 @@ refreshSamples();
 sampleTimer = setInterval(refreshSamples, 10000);
 langSelect.addEventListener('change', () => { refreshSamples(); });
 
-/* Warm the lambda in the background so the first real query isn't cold */
-fetch('/api/health').catch(() => {});
+/* Warm the lambda in the background so the first real query isn't cold.
+   warm=all loads every language synchronously inside this request. */
+fetch('/api/health?warm=all').catch(() => {});
 
 document.addEventListener('click', e => {
   const chip = e.target.closest('.sample-chip.chip-refuse');
