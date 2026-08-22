@@ -30,7 +30,7 @@ from typing import Optional, List, Dict, Any
 from .config import PipelineConfig
 from .chunking import STRATEGIES, Chunk
 from .retrieval import VectorIndex, RetrievalResult
-from .guardrails import check_unsafe_input, check_off_topic, check_grounding, GuardrailVerdict, _content_words
+from .guardrails import check_unsafe_input, check_off_topic, check_grounding, check_live_query, GuardrailVerdict, _content_words
 from .generation import (
     generate_answer, generate_answer_mock, generate_answer_extractive, GenerationError,
 )
@@ -161,8 +161,33 @@ def _check_topic_relevance(query: str, results: List[RetrievalResult]) -> float:
                 query_entity_words |= ew
         non_entity_q = q_words - query_entity_words
         if non_entity_q:
-            non_entity_matches = len(non_entity_q & context_words)
-            focus_score = min(1.0, non_entity_matches / len(non_entity_q))
+            # Non-entity query words (the ASPECT being asked: "bifurcation",
+            # "population", "recipe"...) must co-occur WITH an entity word
+            # inside a SINGLE passage. Counting them across the pooled top-k
+            # let one chunk's "bifurcation" plus another chunk's
+            # "Andhra Pradesh" fake topical coverage.
+            import re as _re
+
+            def _has_word(word: str, text: str) -> bool:
+                return _re.search(r"\b" + _re.escape(word) + r"\b", text) is not None
+
+            if query_entity_words:
+                good = 0
+                for r in results[:3]:
+                    tl = r.chunk.text.lower()
+                    if not any(_has_word(w, tl) for w in query_entity_words):
+                        continue  # passage doesn't even mention the entity
+                    good += sum(1 for w in non_entity_q if _has_word(w, tl))
+                focus_score = min(1.0, good / len(non_entity_q))
+            else:
+                # No known entity in the query: score by the BEST single
+                # passage's coverage of the aspect words.
+                best = max(
+                    (sum(1 for w in non_entity_q if _has_word(w, r.chunk.text.lower()))
+                     for r in results[:3]),
+                    default=0,
+                )
+                focus_score = min(1.0, best / len(non_entity_q))
         else:
             # Pure entity query — conservative score
             entity_related = len(query_entity_words & context_words)
@@ -359,8 +384,30 @@ class VoiceRAGHarness:
             )
             return self._refuse(query, verdict, timings, t_start)
 
+        # Refuse queries with NO content words ("the the the") — pure
+        # function words can only produce noise matches. Uses the curated
+        # multilingual stopword list, NOT the corpus-derived one: the latter
+        # is frequency-tuned and can swallow rare-but-meaningful short
+        # tokens (e.g. abbreviations like "सी.एम.ए.").
+        from .guardrails import _STOPWORDS as _CURATED_STOPWORDS
+        if not (_content_words(query_stripped) - _CURATED_STOPWORDS):
+            verdict = GuardrailVerdict(
+                passed=False,
+                reason="query contains no content words — nothing to retrieve on",
+                stage="input_validation",
+            )
+            return self._refuse(query, verdict, timings, t_start)
+
         try:
             verdict, t = self._timed("guardrail_unsafe_input", check_unsafe_input, query, self.cfg.guardrails)
+            timings.append(t)
+            if not verdict.passed:
+                return self._refuse(query, verdict, timings, t_start)
+
+            # Static-corpus honesty: refuse queries demanding live/recency
+            # data ("today's price", "yesterday's match") BEFORE retrieval —
+            # any lexical match would be about the wrong time.
+            verdict, t = self._timed("guardrail_live_query", check_live_query, query, self.cfg.guardrails)
             timings.append(t)
             if not verdict.passed:
                 return self._refuse(query, verdict, timings, t_start)

@@ -69,12 +69,15 @@ def _load_prebuilt(lang_code: str):
     with open(path, 'rb') as f:
         harness = _pickle.loads(_gzip.decompress(f.read()))
     # Keep the pickled cfg (it carries the corpus-tuned stopwords), but
-    # re-bind secrets from THIS environment: keys were stripped before the
-    # pickle was saved so no secrets ship in git.
+    # re-bind everything that must track CURRENT code/secrets: keys were
+    # stripped before saving, and safety keyword lists evolve with the code
+    # (a pickle built last week must not keep last week's blocklist).
     harness.cfg.generation.groq_api_key = os.getenv("GROQ_API_KEY", "")
     harness.cfg.generation.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
     harness.cfg.stt.sarvam_api_key = os.getenv("SARVAM_API_KEY", "")
     harness.cfg.stt.groq_api_key = os.getenv("GROQ_API_KEY", "")
+    from pipeline.config import GuardrailConfig as _GC
+    harness.cfg.guardrails.unsafe_keywords = _GC().unsafe_keywords
     ms = (_time.perf_counter() - t0) * 1000
     print(f'[init] Loaded {lang_code} PREBUILT index: {len(harness.chunks)} chunks ({ms:.0f}ms)')
     return harness

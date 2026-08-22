@@ -117,7 +117,8 @@ class GuardrailConfig:
     unsafe_keywords: tuple = (
         # English
         "bomb", "explosive", "weapon", "kill", "suicide", "self-harm",
-        "hack into", "malware", "child abuse",
+        "self harm", "harm myself", "hurt myself", "kill myself",
+        "end my life", "hack into", "malware", "child abuse",
         # Hindi (the demo's primary language)
         "बम", "विस्फोटक", "हथियार", "हत्या", "आत्महत्या", "आत्म-हत्या",
         "मारने", "मारना", "मारें", "मैलवेयर", "हैक", "बच्चों का शोषण",

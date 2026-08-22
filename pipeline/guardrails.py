@@ -44,6 +44,36 @@ def check_unsafe_input(query: str, cfg: GuardrailConfig) -> GuardrailVerdict:
     return GuardrailVerdict(passed=True, stage="unsafe_input")
 
 
+# Word-bounded patterns for questions that demand LIVE or RECENT data a
+# static corpus can never supply (the index is a fixed 2018-era web QA
+# slice). Whatever passage lexically matches such a query is about the
+# WRONG TIME, so the honest behavior is to refuse, not to answer from
+# stale context. Word boundaries keep e.g. "nowadays"/"currents" safe.
+_LIVE_QUERY_RE = re.compile(
+    r"\b(yesterday|tomorrow|tonight|today|right now|latest|breaking|"
+    r"live score|live update|live news|flight status|weather forecast|"
+    r"near me|nearby|current ceo|current president|"
+    r"current chief|current minister|current pm|current cm|now\b|"
+    r"won the last|won the most recent|sunset|sunrise|moonrise)\b",
+    re.IGNORECASE,
+)
+
+
+def check_live_query(query: str, cfg: GuardrailConfig) -> GuardrailVerdict:
+    """Refuse queries asking for real-time / recency-dependent facts the
+    static index cannot ground (prices 'today', 'yesterday's' match, live
+    status). Sub-microsecond regex; runs pre-retrieval."""
+    m = _LIVE_QUERY_RE.search(query)
+    if m:
+        return GuardrailVerdict(
+            passed=False,
+            reason=f"asks for live/recent data ('{m.group(0)}') — the dataset is a static "
+                   f"corpus with no current information",
+            stage="live_query",
+        )
+    return GuardrailVerdict(passed=True, stage="live_query")
+
+
 # Stopwords stripped from the query before computing content-word overlap,
 # so generic question words can't satisfy the relevance check by themselves.
 # Covers Hindi (Devanagari) and the English question/function words that
