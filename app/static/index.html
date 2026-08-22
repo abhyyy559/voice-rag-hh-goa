@@ -201,6 +201,32 @@
   .wave span:nth-child(even) { background: var(--green); animation-duration: .7s; }
   @keyframes bounce-subtle { 0%,100% { height: 7px; } 50% { height: 26px; } }
 
+  /* Reactive mode: JS drives bar heights from real mic amplitude */
+  .wave.reactive span { animation: none; transition: height .07s linear; height: 20%; }
+  .wave.speaking-wave span { animation: none !important; background: var(--yellow) !important; }
+
+  /* TTS toggle pill next to the mic */
+  .tts-btn {
+    flex-shrink: 0; width: 46px; height: 46px; border-radius: var(--radius-pill);
+    border: 2px solid var(--ink); background: var(--white); cursor: pointer;
+    font-size: 1.05rem; line-height: 1; display: grid; place-items: center;
+    box-shadow: 3px 3px 0 rgba(0,0,0,.18); transition: transform .12s ease;
+  }
+  .tts-btn:hover { transform: scale(1.06); }
+  .tts-btn.muted { opacity: .45; filter: grayscale(1); }
+  .tts-btn.on { background: var(--yellow); }
+
+  /* Answer-speaking state: mic button glows yellow, title pulses */
+  body.speaking .mic-btn {
+    border-color: var(--yellow); color: var(--ink); background: var(--yellow);
+    animation: pulse-glow 1.2s ease infinite;
+  }
+  body.thinking .mic-title::after {
+    content: '…'; display: inline-block; overflow: hidden; vertical-align: bottom;
+    animation: dots 1.2s steps(4) infinite; width: 1.2em;
+  }
+  @keyframes dots { 0% { width: 0; } 100% { width: 1.2em; } }
+
   .controls-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
   .controls-row label {
     font-size: .7rem; color: rgba(20,19,15,.65);
@@ -478,6 +504,7 @@
 
     <div class="voice-row">
       <button class="mic-btn" id="micBtn" title="Toggle live transcription">🎙</button>
+      <button class="tts-btn" id="ttsBtn" title="Read answers aloud (text-to-speech)">🔊</button>
       <div class="mic-copy">
         <div class="mic-title" id="micTitle">Voice-first query</div>
         <div class="mic-sub" id="micSub">Tap the mic and speak — your words appear here live. Tap again when done, then hit Submit.</div>
@@ -651,6 +678,7 @@ function setListening(on) {
   micBtn.classList.toggle('listening', on);
   micBtn.textContent = on ? '⏹' : '🎙';
   wave.classList.toggle('on', on);
+  if (on) startReactiveWave(); else stopReactiveWave();
   micSub.classList.toggle('live', on);
   $('pipe-mic').classList.toggle('lit', on);
   if (on) {
@@ -665,6 +693,7 @@ function setListening(on) {
 }
 
 function startListening() {
+  if (listening) return;   // guard: double-tap must not create a second recognizer
   finalTranscript = '';
   recognition = new SR();
   recognition.lang = LANG_LOCALES[currentLang];
@@ -760,11 +789,88 @@ if (!SR) {
   micSub.textContent = 'This browser has no live speech recognition — tapping the mic records and transcribes on the server instead.';
 }
 
+/* ---------------- Answer TTS ---------------- */
+let ttsMuted = localStorage.getItem('ttsMuted') === '1';
+const ttsBtn = $('ttsBtn');
+function setTtsIcon() {
+  ttsBtn.textContent = ttsMuted ? '🔇' : '🔊';
+  ttsBtn.classList.toggle('muted', ttsMuted);
+  ttsBtn.classList.toggle('on', !ttsMuted);
+}
+ttsBtn.addEventListener('click', () => {
+  ttsMuted = !ttsMuted;
+  localStorage.setItem('ttsMuted', ttsMuted ? '1' : '0');
+  if (ttsMuted && 'speechSynthesis' in window) { speechSynthesis.cancel(); setSpeaking(false); }
+  setTtsIcon();
+});
+setTtsIcon();
+
+function setSpeaking(on) {
+  document.body.classList.toggle('speaking', on);
+  if (!listening) {
+    wave.classList.toggle('on', on);
+    wave.classList.toggle('speaking-wave', on);
+    micTitle.textContent = on ? 'Speaking answer…' : 'Voice-first query';
+  }
+}
+
+const TTS_LOCALES = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' };
+function speakAnswer(text) {
+  if (ttsMuted || !('speechSynthesis' in window) || !text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.slice(0, 600));
+  u.lang = TTS_LOCALES[currentLang] || 'en-IN';
+  u.rate = 1.0; u.pitch = 1.0;
+  const voices = speechSynthesis.getVoices();
+  const exact = voices.find(v => v.lang === u.lang);
+  const loose = voices.find(v => v.lang && v.lang.split('-')[0] === u.lang.split('-')[0]);
+  if (exact || loose) u.voice = exact || loose;
+  u.onstart = () => setSpeaking(true);
+  u.onend = u.onerror = () => setSpeaking(false);
+  speechSynthesis.speak(u);
+}
+if ('speechSynthesis' in window) speechSynthesis.getVoices(); // warm the voice list
+
+/* -------- Reactive mic waveform (WebAudio amplitude → bar heights) -------- */
+let vizRaf = null, vizCtx = null, vizStream = null, vizAnalyser = null;
+function startReactiveWave() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return; /* CSS fallback */
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    vizStream = stream;
+    vizCtx = new (window.AudioContext || window.webkitAudioContext)();
+    vizAnalyser = vizCtx.createAnalyser();
+    vizAnalyser.fftSize = 256;
+    vizCtx.createMediaStreamSource(stream).connect(vizAnalyser);
+    const bins = new Uint8Array(vizAnalyser.frequencyBinCount);
+    const bars = wave.querySelectorAll('span');
+    wave.classList.add('reactive');
+    const tick = () => {
+      vizAnalyser.getByteFrequencyData(bins);
+      bars.forEach((b, i) => {
+        const idx = Math.min(bins.length - 1, 2 + Math.floor(i * bins.length / (bars.length * 2)));
+        b.style.height = Math.max(14, (bins[idx] / 255) * 130) + '%';
+      });
+      vizRaf = requestAnimationFrame(tick);
+    };
+    tick();
+  }).catch(() => { /* keep the CSS animation */ });
+}
+function stopReactiveWave() {
+  if (vizRaf) cancelAnimationFrame(vizRaf); vizRaf = null;
+  if (vizStream) { vizStream.getTracks().forEach(t => t.stop()); vizStream = null; }
+  if (vizCtx) { try { vizCtx.close(); } catch (_) {} vizCtx = null; }
+  wave.classList.remove('reactive');
+  wave.querySelectorAll('span').forEach(b => { b.style.height = ''; });
+}
+
 /* ---------------- Submit → retrieval ---------------- */
 async function submitQuery() {
   const q = queryInput.value.trim();
   if (!q) return;
   if (listening) stopListening();
+  if ('speechSynthesis' in window) { speechSynthesis.cancel(); setSpeaking(false); }
+  document.body.classList.add('thinking');
+  micTitle.textContent = 'Thinking';
   submitBtn.disabled = true;
   const t0 = performance.now();
   try {
@@ -779,6 +885,8 @@ async function submitQuery() {
   } catch (err) {
     renderResult({ status: 'error', query_text: q, error: err.message, timings: {}, retrieved_sources: [] }, null);
   } finally {
+    document.body.classList.remove('thinking');
+    if (!document.body.classList.contains('speaking')) micTitle.textContent = 'Voice-first query';
     submitBtn.disabled = false;
   }
 }
@@ -823,7 +931,7 @@ function renderResult(data, rttMs) {
                              data.status === 'refused' ? '⚠ Guardrail: Refused' : '✗ Error') + langLabel;
   resultQuery.textContent = data.query_text || '';
 
-  if (data.status === 'ok') answerText.textContent = data.answer || '(empty)';
+  if (data.status === 'ok') { answerText.textContent = data.answer || '(empty)'; speakAnswer(data.answer); }
   else if (data.status === 'refused') { answerText.textContent = data.refusal_reason || 'No reason given'; answerText.style.color = 'var(--pink)'; }
   else { answerText.textContent = data.error || 'Unknown error'; answerText.style.color = 'var(--pink)'; }
 

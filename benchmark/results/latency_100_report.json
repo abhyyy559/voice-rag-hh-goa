@@ -1,5 +1,5 @@
 {
- "cold_start_ms": 65.8,
+ "cold_start_ms": 15.6,
  "note": "in-process server-side timings against prebuilt deployed indexes",
  "rows": [
   {
@@ -8,16 +8,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 14.57,
-   "wall_ms": 14.6,
+   "total_ms": 5.56,
+   "wall_ms": 5.56,
    "stages": {
-    "guardrail_unsafe_input": 0.017,
-    "guardrail_live_query": 0.023,
-    "retrieval": 11.88,
-    "guardrail_off_topic": 0.453,
-    "guardrail_topic_relevance": 1.301,
-    "generation": 0.469,
-    "guardrail_grounding": 0.287
+    "guardrail_unsafe_input": 0.005,
+    "guardrail_live_query": 0.005,
+    "retrieval": 5.099,
+    "guardrail_off_topic": 0.089,
+    "guardrail_topic_relevance": 0.178,
+    "generation": 0.074,
+    "guardrail_grounding": 0.072
    }
   },
   {
@@ -26,16 +26,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 33.57,
-   "wall_ms": 33.59,
+   "total_ms": 10.92,
+   "wall_ms": 10.92,
    "stages": {
-    "guardrail_unsafe_input": 0.012,
-    "guardrail_live_query": 0.018,
-    "retrieval": 30.944,
-    "guardrail_off_topic": 0.422,
-    "guardrail_topic_relevance": 1.323,
-    "generation": 0.54,
-    "guardrail_grounding": 0.206
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.005,
+    "retrieval": 10.359,
+    "guardrail_off_topic": 0.098,
+    "guardrail_topic_relevance": 0.293,
+    "generation": 0.075,
+    "guardrail_grounding": 0.061
    }
   },
   {
@@ -44,16 +44,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 24.11,
-   "wall_ms": 24.13,
+   "total_ms": 5.46,
+   "wall_ms": 5.47,
    "stages": {
-    "guardrail_unsafe_input": 0.009,
-    "guardrail_live_query": 0.011,
-    "retrieval": 22.991,
-    "guardrail_off_topic": 0.398,
-    "guardrail_topic_relevance": 0.32,
-    "generation": 0.244,
-    "guardrail_grounding": 0.085
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.047,
+    "guardrail_off_topic": 0.093,
+    "guardrail_topic_relevance": 0.132,
+    "generation": 0.113,
+    "guardrail_grounding": 0.045
    }
   },
   {
@@ -62,16 +62,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 21.78,
-   "wall_ms": 21.8,
+   "total_ms": 5.58,
+   "wall_ms": 5.59,
    "stages": {
-    "guardrail_unsafe_input": 0.009,
-    "guardrail_live_query": 0.02,
-    "retrieval": 20.299,
-    "guardrail_off_topic": 0.2,
-    "guardrail_topic_relevance": 0.517,
-    "generation": 0.361,
-    "guardrail_grounding": 0.312
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.095,
+    "guardrail_off_topic": 0.13,
+    "guardrail_topic_relevance": 0.164,
+    "generation": 0.092,
+    "guardrail_grounding": 0.078
    }
   },
   {
@@ -80,16 +80,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 21.13,
-   "wall_ms": 21.15,
+   "total_ms": 5.37,
+   "wall_ms": 5.38,
    "stages": {
-    "guardrail_unsafe_input": 0.012,
-    "guardrail_live_query": 0.017,
-    "retrieval": 19.235,
-    "guardrail_off_topic": 0.197,
-    "guardrail_topic_relevance": 0.652,
-    "generation": 0.649,
-    "guardrail_grounding": 0.274
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.004,
+    "retrieval": 4.858,
+    "guardrail_off_topic": 0.109,
+    "guardrail_topic_relevance": 0.184,
+    "generation": 0.099,
+    "guardrail_grounding": 0.086
    }
   },
   {
@@ -98,16 +98,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 21.78,
-   "wall_ms": 21.8,
+   "total_ms": 6.09,
+   "wall_ms": 6.1,
    "stages": {
-    "guardrail_unsafe_input": 0.008,
-    "guardrail_live_query": 0.011,
-    "retrieval": 19.521,
-    "guardrail_off_topic": 0.389,
-    "guardrail_topic_relevance": 0.918,
-    "generation": 0.478,
-    "guardrail_grounding": 0.384
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.536,
+    "guardrail_off_topic": 0.119,
+    "guardrail_topic_relevance": 0.21,
+    "generation": 0.114,
+    "guardrail_grounding": 0.089
    }
   },
   {
@@ -116,16 +116,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 11.24,
-   "wall_ms": 11.25,
+   "total_ms": 2.02,
+   "wall_ms": 2.02,
    "stages": {
-    "guardrail_unsafe_input": 0.013,
-    "guardrail_live_query": 0.01,
-    "retrieval": 9.468,
-    "guardrail_off_topic": 0.304,
-    "guardrail_topic_relevance": 1.041,
-    "generation": 0.173,
-    "guardrail_grounding": 0.127
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.002,
+    "retrieval": 1.756,
+    "guardrail_off_topic": 0.056,
+    "guardrail_topic_relevance": 0.109,
+    "generation": 0.035,
+    "guardrail_grounding": 0.043
    }
   },
   {
@@ -134,16 +134,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 24.85,
-   "wall_ms": 24.86,
+   "total_ms": 5.4,
+   "wall_ms": 5.41,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.011,
-    "retrieval": 23.261,
-    "guardrail_off_topic": 0.71,
-    "guardrail_topic_relevance": 0.48,
-    "generation": 0.16,
-    "guardrail_grounding": 0.151
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.004,
+    "retrieval": 4.871,
+    "guardrail_off_topic": 0.11,
+    "guardrail_topic_relevance": 0.225,
+    "generation": 0.092,
+    "guardrail_grounding": 0.076
    }
   },
   {
@@ -152,16 +152,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 9.5,
-   "wall_ms": 9.52,
+   "total_ms": 2.29,
+   "wall_ms": 2.29,
    "stages": {
-    "guardrail_unsafe_input": 0.006,
-    "guardrail_live_query": 0.008,
-    "retrieval": 8.57,
-    "guardrail_off_topic": 0.186,
-    "guardrail_topic_relevance": 0.431,
-    "generation": 0.121,
-    "guardrail_grounding": 0.139
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 1.851,
+    "guardrail_off_topic": 0.071,
+    "guardrail_topic_relevance": 0.2,
+    "generation": 0.061,
+    "guardrail_grounding": 0.066
    }
   },
   {
@@ -170,16 +170,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 26.05,
-   "wall_ms": 26.08,
+   "total_ms": 6.06,
+   "wall_ms": 6.07,
    "stages": {
-    "guardrail_unsafe_input": 0.006,
-    "guardrail_live_query": 0.005,
-    "retrieval": 24.021,
-    "guardrail_off_topic": 0.473,
-    "guardrail_topic_relevance": 0.762,
-    "generation": 0.392,
-    "guardrail_grounding": 0.314
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.704,
+    "guardrail_off_topic": 0.086,
+    "guardrail_topic_relevance": 0.124,
+    "generation": 0.061,
+    "guardrail_grounding": 0.064
    }
   },
   {
@@ -188,16 +188,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 9.83,
-   "wall_ms": 9.84,
+   "total_ms": 2.55,
+   "wall_ms": 2.56,
    "stages": {
-    "guardrail_unsafe_input": 0.009,
-    "guardrail_live_query": 0.006,
-    "retrieval": 7.893,
-    "guardrail_off_topic": 0.472,
-    "guardrail_topic_relevance": 1.002,
-    "generation": 0.147,
-    "guardrail_grounding": 0.174
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 2.188,
+    "guardrail_off_topic": 0.077,
+    "guardrail_topic_relevance": 0.135,
+    "generation": 0.059,
+    "guardrail_grounding": 0.065
    }
   },
   {
@@ -206,16 +206,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 23.7,
-   "wall_ms": 23.72,
+   "total_ms": 5.32,
+   "wall_ms": 5.33,
    "stages": {
-    "guardrail_unsafe_input": 0.008,
-    "guardrail_live_query": 0.006,
-    "retrieval": 22.101,
-    "guardrail_off_topic": 0.515,
-    "guardrail_topic_relevance": 0.711,
-    "generation": 0.129,
-    "guardrail_grounding": 0.164
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 4.919,
+    "guardrail_off_topic": 0.093,
+    "guardrail_topic_relevance": 0.141,
+    "generation": 0.072,
+    "guardrail_grounding": 0.076
    }
   },
   {
@@ -224,16 +224,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 19.98,
-   "wall_ms": 20.01,
+   "total_ms": 2.96,
+   "wall_ms": 2.97,
    "stages": {
-    "guardrail_unsafe_input": 0.008,
-    "guardrail_live_query": 0.005,
-    "retrieval": 17.779,
-    "guardrail_off_topic": 0.459,
-    "guardrail_topic_relevance": 0.968,
-    "generation": 0.333,
-    "guardrail_grounding": 0.35
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.002,
+    "retrieval": 2.644,
+    "guardrail_off_topic": 0.065,
+    "guardrail_topic_relevance": 0.139,
+    "generation": 0.049,
+    "guardrail_grounding": 0.046
    }
   },
   {
@@ -242,16 +242,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 21.94,
-   "wall_ms": 21.95,
+   "total_ms": 6.15,
+   "wall_ms": 6.15,
    "stages": {
-    "guardrail_unsafe_input": 0.017,
-    "guardrail_live_query": 0.018,
-    "retrieval": 20.799,
-    "guardrail_off_topic": 0.264,
-    "guardrail_topic_relevance": 0.413,
-    "generation": 0.168,
-    "guardrail_grounding": 0.165
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.666,
+    "guardrail_off_topic": 0.108,
+    "guardrail_topic_relevance": 0.187,
+    "generation": 0.087,
+    "guardrail_grounding": 0.077
    }
   },
   {
@@ -260,16 +260,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 7.26,
-   "wall_ms": 7.28,
+   "total_ms": 1.77,
+   "wall_ms": 1.78,
    "stages": {
     "guardrail_unsafe_input": 0.006,
-    "guardrail_live_query": 0.006,
-    "retrieval": 5.888,
-    "guardrail_off_topic": 0.211,
-    "guardrail_topic_relevance": 0.52,
-    "generation": 0.312,
-    "guardrail_grounding": 0.262
+    "guardrail_live_query": 0.003,
+    "retrieval": 1.401,
+    "guardrail_off_topic": 0.07,
+    "guardrail_topic_relevance": 0.153,
+    "generation": 0.063,
+    "guardrail_grounding": 0.056
    }
   },
   {
@@ -278,16 +278,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 25.48,
-   "wall_ms": 25.51,
+   "total_ms": 6.09,
+   "wall_ms": 6.09,
    "stages": {
-    "guardrail_unsafe_input": 0.013,
-    "guardrail_live_query": 0.017,
-    "retrieval": 23.158,
-    "guardrail_off_topic": 0.275,
-    "guardrail_topic_relevance": 0.954,
-    "generation": 0.516,
-    "guardrail_grounding": 0.427
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.654,
+    "guardrail_off_topic": 0.097,
+    "guardrail_topic_relevance": 0.202,
+    "generation": 0.064,
+    "guardrail_grounding": 0.046
    }
   },
   {
@@ -296,16 +296,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 30.45,
-   "wall_ms": 30.49,
+   "total_ms": 7.54,
+   "wall_ms": 7.55,
    "stages": {
-    "guardrail_unsafe_input": 0.018,
-    "guardrail_live_query": 0.025,
-    "retrieval": 27.837,
-    "guardrail_off_topic": 0.461,
-    "guardrail_topic_relevance": 0.728,
-    "generation": 0.575,
-    "guardrail_grounding": 0.67
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.003,
+    "retrieval": 7.132,
+    "guardrail_off_topic": 0.087,
+    "guardrail_topic_relevance": 0.147,
+    "generation": 0.08,
+    "guardrail_grounding": 0.066
    }
   },
   {
@@ -314,16 +314,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 23.39,
-   "wall_ms": 23.4,
+   "total_ms": 5.8,
+   "wall_ms": 5.81,
    "stages": {
-    "guardrail_unsafe_input": 0.013,
-    "guardrail_live_query": 0.018,
-    "retrieval": 22.474,
-    "guardrail_off_topic": 0.164,
-    "guardrail_topic_relevance": 0.252,
-    "generation": 0.145,
-    "guardrail_grounding": 0.157
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.004,
+    "retrieval": 5.374,
+    "guardrail_off_topic": 0.088,
+    "guardrail_topic_relevance": 0.142,
+    "generation": 0.08,
+    "guardrail_grounding": 0.088
    }
   },
   {
@@ -332,16 +332,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 24.22,
-   "wall_ms": 24.24,
+   "total_ms": 5.13,
+   "wall_ms": 5.14,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.007,
-    "retrieval": 21.49,
-    "guardrail_off_topic": 0.508,
-    "guardrail_topic_relevance": 1.22,
-    "generation": 0.534,
-    "guardrail_grounding": 0.381
+    "guardrail_unsafe_input": 0.005,
+    "guardrail_live_query": 0.004,
+    "retrieval": 4.714,
+    "guardrail_off_topic": 0.08,
+    "guardrail_topic_relevance": 0.176,
+    "generation": 0.078,
+    "guardrail_grounding": 0.055
    }
   },
   {
@@ -350,16 +350,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 29.42,
-   "wall_ms": 29.44,
+   "total_ms": 7.3,
+   "wall_ms": 7.3,
    "stages": {
-    "guardrail_unsafe_input": 0.016,
-    "guardrail_live_query": 0.022,
-    "retrieval": 27.852,
-    "guardrail_off_topic": 0.327,
-    "guardrail_topic_relevance": 0.637,
-    "generation": 0.257,
-    "guardrail_grounding": 0.212
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 6.91,
+    "guardrail_off_topic": 0.082,
+    "guardrail_topic_relevance": 0.15,
+    "generation": 0.077,
+    "guardrail_grounding": 0.051
    }
   },
   {
@@ -368,16 +368,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 25.84,
-   "wall_ms": 25.87,
+   "total_ms": 6.12,
+   "wall_ms": 6.13,
    "stages": {
-    "guardrail_unsafe_input": 0.011,
-    "guardrail_live_query": 0.01,
-    "retrieval": 22.848,
-    "guardrail_off_topic": 0.598,
-    "guardrail_topic_relevance": 1.263,
-    "generation": 0.552,
-    "guardrail_grounding": 0.443
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.722,
+    "guardrail_off_topic": 0.085,
+    "guardrail_topic_relevance": 0.153,
+    "generation": 0.071,
+    "guardrail_grounding": 0.062
    }
   },
   {
@@ -386,16 +386,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 28.61,
-   "wall_ms": 28.64,
+   "total_ms": 6.0,
+   "wall_ms": 6.01,
    "stages": {
-    "guardrail_unsafe_input": 0.014,
-    "guardrail_live_query": 0.017,
-    "retrieval": 25.521,
-    "guardrail_off_topic": 0.401,
-    "guardrail_topic_relevance": 1.557,
-    "generation": 0.515,
-    "guardrail_grounding": 0.472
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.538,
+    "guardrail_off_topic": 0.098,
+    "guardrail_topic_relevance": 0.187,
+    "generation": 0.074,
+    "guardrail_grounding": 0.074
    }
   },
   {
@@ -404,16 +404,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 26.16,
-   "wall_ms": 26.18,
+   "total_ms": 6.64,
+   "wall_ms": 6.65,
    "stages": {
-    "guardrail_unsafe_input": 0.015,
-    "guardrail_live_query": 0.018,
-    "retrieval": 24.351,
-    "guardrail_off_topic": 0.32,
-    "guardrail_topic_relevance": 0.734,
-    "generation": 0.314,
-    "guardrail_grounding": 0.305
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 6.19,
+    "guardrail_off_topic": 0.089,
+    "guardrail_topic_relevance": 0.181,
+    "generation": 0.081,
+    "guardrail_grounding": 0.074
    }
   },
   {
@@ -422,16 +422,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 35.84,
-   "wall_ms": 35.85,
+   "total_ms": 7.88,
+   "wall_ms": 7.89,
    "stages": {
-    "guardrail_unsafe_input": 0.012,
-    "guardrail_live_query": 0.01,
-    "retrieval": 35.003,
-    "guardrail_off_topic": 0.202,
-    "guardrail_topic_relevance": 0.242,
-    "generation": 0.127,
-    "guardrail_grounding": 0.185
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.003,
+    "retrieval": 7.493,
+    "guardrail_off_topic": 0.093,
+    "guardrail_topic_relevance": 0.119,
+    "generation": 0.064,
+    "guardrail_grounding": 0.087
    }
   },
   {
@@ -440,16 +440,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 5.44,
-   "wall_ms": 5.45,
+   "total_ms": 1.74,
+   "wall_ms": 1.74,
    "stages": {
-    "guardrail_unsafe_input": 0.006,
-    "guardrail_live_query": 0.006,
-    "retrieval": 4.546,
-    "guardrail_off_topic": 0.174,
-    "guardrail_topic_relevance": 0.368,
-    "generation": 0.123,
-    "guardrail_grounding": 0.174
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 1.38,
+    "guardrail_off_topic": 0.067,
+    "guardrail_topic_relevance": 0.134,
+    "generation": 0.059,
+    "guardrail_grounding": 0.076
    }
   },
   {
@@ -458,16 +458,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 15.49,
-   "wall_ms": 15.51,
+   "total_ms": 4.8,
+   "wall_ms": 4.81,
    "stages": {
-    "guardrail_unsafe_input": 0.005,
-    "guardrail_live_query": 0.005,
-    "retrieval": 13.954,
-    "guardrail_off_topic": 0.285,
-    "guardrail_topic_relevance": 0.424,
-    "generation": 0.401,
-    "guardrail_grounding": 0.356
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.002,
+    "retrieval": 4.469,
+    "guardrail_off_topic": 0.088,
+    "guardrail_topic_relevance": 0.102,
+    "generation": 0.07,
+    "guardrail_grounding": 0.05
    }
   },
   {
@@ -476,16 +476,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 14.41,
-   "wall_ms": 14.42,
+   "total_ms": 6.87,
+   "wall_ms": 6.88,
    "stages": {
-    "guardrail_unsafe_input": 0.013,
-    "guardrail_live_query": 0.021,
-    "retrieval": 13.253,
-    "guardrail_off_topic": 0.286,
-    "guardrail_topic_relevance": 0.469,
-    "generation": 0.155,
-    "guardrail_grounding": 0.134
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 5.998,
+    "guardrail_off_topic": 0.165,
+    "guardrail_topic_relevance": 0.379,
+    "generation": 0.146,
+    "guardrail_grounding": 0.147
    }
   },
   {
@@ -494,16 +494,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 14.1,
-   "wall_ms": 14.12,
+   "total_ms": 5.9,
+   "wall_ms": 5.91,
    "stages": {
-    "guardrail_unsafe_input": 0.005,
-    "guardrail_live_query": 0.005,
-    "retrieval": 13.023,
-    "guardrail_off_topic": 0.181,
-    "guardrail_topic_relevance": 0.379,
-    "generation": 0.217,
-    "guardrail_grounding": 0.242
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 5.538,
+    "guardrail_off_topic": 0.081,
+    "guardrail_topic_relevance": 0.133,
+    "generation": 0.059,
+    "guardrail_grounding": 0.063
    }
   },
   {
@@ -512,16 +512,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 10.01,
-   "wall_ms": 10.03,
+   "total_ms": 2.24,
+   "wall_ms": 2.24,
    "stages": {
-    "guardrail_unsafe_input": 0.011,
-    "guardrail_live_query": 0.01,
-    "retrieval": 8.274,
-    "guardrail_off_topic": 0.352,
-    "guardrail_topic_relevance": 0.678,
-    "generation": 0.33,
-    "guardrail_grounding": 0.275
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.003,
+    "retrieval": 1.881,
+    "guardrail_off_topic": 0.073,
+    "guardrail_topic_relevance": 0.138,
+    "generation": 0.061,
+    "guardrail_grounding": 0.061
    }
   },
   {
@@ -530,11 +530,11 @@
    "lang": "en",
    "category": "en_gold",
    "status": "refused",
-   "total_ms": 0.09,
-   "wall_ms": 0.11,
+   "total_ms": 0.02,
+   "wall_ms": 0.02,
    "stages": {
-    "guardrail_unsafe_input": 0.013,
-    "guardrail_live_query": 0.026
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.006
    }
   },
   {
@@ -543,16 +543,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 16.46,
-   "wall_ms": 16.47,
+   "total_ms": 2.76,
+   "wall_ms": 2.76,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.01,
-    "retrieval": 14.242,
-    "guardrail_off_topic": 0.778,
-    "guardrail_topic_relevance": 0.77,
-    "generation": 0.303,
-    "guardrail_grounding": 0.277
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003,
+    "retrieval": 2.347,
+    "guardrail_off_topic": 0.084,
+    "guardrail_topic_relevance": 0.158,
+    "generation": 0.085,
+    "guardrail_grounding": 0.068
    }
   },
   {
@@ -561,16 +561,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 8.38,
-   "wall_ms": 8.4,
+   "total_ms": 1.35,
+   "wall_ms": 1.35,
    "stages": {
-    "guardrail_unsafe_input": 0.011,
-    "guardrail_live_query": 0.008,
-    "retrieval": 6.965,
-    "guardrail_off_topic": 0.32,
-    "guardrail_topic_relevance": 0.442,
-    "generation": 0.324,
-    "guardrail_grounding": 0.205
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.002,
+    "retrieval": 1.088,
+    "guardrail_off_topic": 0.061,
+    "guardrail_topic_relevance": 0.081,
+    "generation": 0.06,
+    "guardrail_grounding": 0.042
    }
   },
   {
@@ -579,16 +579,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 5.48,
-   "wall_ms": 5.49,
+   "total_ms": 1.98,
+   "wall_ms": 1.98,
    "stages": {
-    "guardrail_unsafe_input": 0.006,
-    "guardrail_live_query": 0.006,
-    "retrieval": 4.777,
-    "guardrail_off_topic": 0.242,
-    "guardrail_topic_relevance": 0.268,
-    "generation": 0.069,
-    "guardrail_grounding": 0.077
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003,
+    "retrieval": 1.712,
+    "guardrail_off_topic": 0.057,
+    "guardrail_topic_relevance": 0.119,
+    "generation": 0.035,
+    "guardrail_grounding": 0.036
    }
   },
   {
@@ -597,16 +597,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 4.12,
-   "wall_ms": 4.15,
+   "total_ms": 2.72,
+   "wall_ms": 2.84,
    "stages": {
-    "guardrail_unsafe_input": 0.006,
-    "guardrail_live_query": 0.006,
-    "retrieval": 3.504,
-    "guardrail_off_topic": 0.138,
-    "guardrail_topic_relevance": 0.238,
-    "generation": 0.103,
-    "guardrail_grounding": 0.093
+    "guardrail_unsafe_input": 0.011,
+    "guardrail_live_query": 0.009,
+    "retrieval": 2.331,
+    "guardrail_off_topic": 0.069,
+    "guardrail_topic_relevance": 0.122,
+    "generation": 0.057,
+    "guardrail_grounding": 0.049
    }
   },
   {
@@ -615,16 +615,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 23.79,
-   "wall_ms": 23.81,
+   "total_ms": 7.6,
+   "wall_ms": 7.61,
    "stages": {
-    "guardrail_unsafe_input": 0.006,
-    "guardrail_live_query": 0.006,
-    "retrieval": 22.686,
-    "guardrail_off_topic": 0.288,
-    "guardrail_topic_relevance": 0.461,
-    "generation": 0.197,
-    "guardrail_grounding": 0.096
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.009,
+    "retrieval": 7.295,
+    "guardrail_off_topic": 0.07,
+    "guardrail_topic_relevance": 0.12,
+    "generation": 0.05,
+    "guardrail_grounding": 0.026
    }
   },
   {
@@ -633,16 +633,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 6.04,
-   "wall_ms": 6.09,
+   "total_ms": 2.17,
+   "wall_ms": 2.18,
    "stages": {
-    "guardrail_unsafe_input": 0.011,
-    "guardrail_live_query": 0.011,
-    "retrieval": 4.427,
-    "guardrail_off_topic": 0.421,
-    "guardrail_topic_relevance": 0.736,
-    "generation": 0.18,
-    "guardrail_grounding": 0.169
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 1.822,
+    "guardrail_off_topic": 0.076,
+    "guardrail_topic_relevance": 0.145,
+    "generation": 0.059,
+    "guardrail_grounding": 0.049
    }
   },
   {
@@ -651,16 +651,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 13.47,
-   "wall_ms": 13.48,
+   "total_ms": 6.84,
+   "wall_ms": 6.85,
    "stages": {
-    "guardrail_unsafe_input": 0.008,
-    "guardrail_live_query": 0.009,
-    "retrieval": 12.331,
-    "guardrail_off_topic": 0.267,
-    "guardrail_topic_relevance": 0.369,
-    "generation": 0.218,
-    "guardrail_grounding": 0.209
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003,
+    "retrieval": 6.314,
+    "guardrail_off_topic": 0.105,
+    "guardrail_topic_relevance": 0.186,
+    "generation": 0.104,
+    "guardrail_grounding": 0.103
    }
   },
   {
@@ -669,16 +669,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 11.73,
-   "wall_ms": 11.74,
+   "total_ms": 6.52,
+   "wall_ms": 6.53,
    "stages": {
-    "guardrail_unsafe_input": 0.008,
-    "guardrail_live_query": 0.01,
-    "retrieval": 10.889,
-    "guardrail_off_topic": 0.218,
-    "guardrail_topic_relevance": 0.259,
-    "generation": 0.213,
-    "guardrail_grounding": 0.091
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.005,
+    "retrieval": 6.068,
+    "guardrail_off_topic": 0.088,
+    "guardrail_topic_relevance": 0.155,
+    "generation": 0.124,
+    "guardrail_grounding": 0.052
    }
   },
   {
@@ -687,13 +687,13 @@
    "lang": "en",
    "category": "en_gold",
    "status": "refused",
-   "total_ms": 26.5,
-   "wall_ms": 26.52,
+   "total_ms": 11.5,
+   "wall_ms": 11.51,
    "stages": {
-    "guardrail_unsafe_input": 0.005,
-    "guardrail_live_query": 0.008,
-    "retrieval": 26.278,
-    "guardrail_off_topic": 0.182
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 11.391,
+    "guardrail_off_topic": 0.089
    }
   },
   {
@@ -702,16 +702,16 @@
    "lang": "en",
    "category": "en_gold",
    "status": "ok",
-   "total_ms": 11.36,
-   "wall_ms": 11.37,
+   "total_ms": 5.28,
+   "wall_ms": 5.29,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.009,
-    "retrieval": 10.664,
-    "guardrail_off_topic": 0.153,
-    "guardrail_topic_relevance": 0.3,
-    "generation": 0.097,
-    "guardrail_grounding": 0.091
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.005,
+    "retrieval": 4.934,
+    "guardrail_off_topic": 0.079,
+    "guardrail_topic_relevance": 0.14,
+    "generation": 0.054,
+    "guardrail_grounding": 0.049
    }
   },
   {
@@ -720,16 +720,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 13.59,
-   "wall_ms": 13.6,
+   "total_ms": 5.19,
+   "wall_ms": 5.2,
    "stages": {
-    "guardrail_unsafe_input": 0.004,
-    "guardrail_live_query": 0.005,
-    "retrieval": 12.575,
-    "guardrail_off_topic": 0.235,
-    "guardrail_topic_relevance": 0.291,
-    "generation": 0.23,
-    "guardrail_grounding": 0.208
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 4.807,
+    "guardrail_off_topic": 0.084,
+    "guardrail_topic_relevance": 0.121,
+    "generation": 0.086,
+    "guardrail_grounding": 0.071
    }
   },
   {
@@ -738,16 +738,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 14.95,
-   "wall_ms": 14.96,
+   "total_ms": 7.25,
+   "wall_ms": 7.26,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.009,
-    "retrieval": 13.937,
-    "guardrail_off_topic": 0.164,
-    "guardrail_topic_relevance": 0.219,
-    "generation": 0.263,
-    "guardrail_grounding": 0.298
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 6.915,
+    "guardrail_off_topic": 0.087,
+    "guardrail_topic_relevance": 0.062,
+    "generation": 0.089,
+    "guardrail_grounding": 0.076
    }
   },
   {
@@ -756,16 +756,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 15.92,
-   "wall_ms": 15.94,
+   "total_ms": 5.8,
+   "wall_ms": 5.8,
    "stages": {
-    "guardrail_unsafe_input": 0.009,
-    "guardrail_live_query": 0.011,
-    "retrieval": 15.002,
-    "guardrail_off_topic": 0.19,
-    "guardrail_topic_relevance": 0.335,
-    "generation": 0.141,
-    "guardrail_grounding": 0.177
+    "guardrail_unsafe_input": 0.005,
+    "guardrail_live_query": 0.004,
+    "retrieval": 5.406,
+    "guardrail_off_topic": 0.082,
+    "guardrail_topic_relevance": 0.149,
+    "generation": 0.068,
+    "guardrail_grounding": 0.066
    }
   },
   {
@@ -774,16 +774,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 15.66,
-   "wall_ms": 15.69,
+   "total_ms": 3.94,
+   "wall_ms": 3.95,
    "stages": {
-    "guardrail_unsafe_input": 0.009,
-    "guardrail_live_query": 0.011,
-    "retrieval": 13.401,
-    "guardrail_off_topic": 0.467,
-    "guardrail_topic_relevance": 0.897,
-    "generation": 0.213,
-    "guardrail_grounding": 0.576
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 3.616,
+    "guardrail_off_topic": 0.069,
+    "guardrail_topic_relevance": 0.132,
+    "generation": 0.054,
+    "guardrail_grounding": 0.049
    }
   },
   {
@@ -792,16 +792,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 27.27,
-   "wall_ms": 27.3,
+   "total_ms": 5.77,
+   "wall_ms": 5.78,
    "stages": {
-    "guardrail_unsafe_input": 0.021,
-    "guardrail_live_query": 0.015,
-    "retrieval": 25.318,
-    "guardrail_off_topic": 0.417,
-    "guardrail_topic_relevance": 0.614,
-    "generation": 0.395,
-    "guardrail_grounding": 0.293
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.151,
+    "guardrail_off_topic": 0.217,
+    "guardrail_topic_relevance": 0.169,
+    "generation": 0.133,
+    "guardrail_grounding": 0.079
    }
   },
   {
@@ -810,16 +810,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 35.01,
-   "wall_ms": 35.04,
+   "total_ms": 7.5,
+   "wall_ms": 7.51,
    "stages": {
-    "guardrail_unsafe_input": 0.012,
-    "guardrail_live_query": 0.011,
-    "retrieval": 33.451,
-    "guardrail_off_topic": 0.433,
-    "guardrail_topic_relevance": 0.528,
-    "generation": 0.244,
-    "guardrail_grounding": 0.232
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 7.226,
+    "guardrail_off_topic": 0.065,
+    "guardrail_topic_relevance": 0.105,
+    "generation": 0.045,
+    "guardrail_grounding": 0.037
    }
   },
   {
@@ -828,16 +828,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 28.61,
-   "wall_ms": 28.65,
+   "total_ms": 5.51,
+   "wall_ms": 5.52,
    "stages": {
-    "guardrail_unsafe_input": 0.015,
-    "guardrail_live_query": 0.016,
-    "retrieval": 26.043,
-    "guardrail_off_topic": 0.654,
-    "guardrail_topic_relevance": 0.625,
-    "generation": 0.298,
-    "guardrail_grounding": 0.841
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.187,
+    "guardrail_off_topic": 0.072,
+    "guardrail_topic_relevance": 0.109,
+    "generation": 0.053,
+    "guardrail_grounding": 0.065
    }
   },
   {
@@ -846,16 +846,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 47.8,
-   "wall_ms": 47.83,
+   "total_ms": 10.15,
+   "wall_ms": 10.16,
    "stages": {
-    "guardrail_unsafe_input": 0.021,
-    "guardrail_live_query": 0.031,
-    "retrieval": 46.09,
-    "guardrail_off_topic": 0.373,
-    "guardrail_topic_relevance": 0.617,
-    "generation": 0.277,
-    "guardrail_grounding": 0.204
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 9.77,
+    "guardrail_off_topic": 0.085,
+    "guardrail_topic_relevance": 0.149,
+    "generation": 0.068,
+    "guardrail_grounding": 0.05
    }
   },
   {
@@ -864,16 +864,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 35.25,
-   "wall_ms": 35.3,
+   "total_ms": 6.42,
+   "wall_ms": 6.43,
    "stages": {
-    "guardrail_unsafe_input": 0.015,
-    "guardrail_live_query": 0.016,
-    "retrieval": 33.063,
-    "guardrail_off_topic": 0.345,
-    "guardrail_topic_relevance": 0.553,
-    "generation": 0.46,
-    "guardrail_grounding": 0.689
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.003,
+    "retrieval": 6.094,
+    "guardrail_off_topic": 0.075,
+    "guardrail_topic_relevance": 0.109,
+    "generation": 0.067,
+    "guardrail_grounding": 0.054
    }
   },
   {
@@ -882,16 +882,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 20.57,
-   "wall_ms": 20.59,
+   "total_ms": 3.86,
+   "wall_ms": 3.86,
    "stages": {
-    "guardrail_unsafe_input": 0.026,
-    "guardrail_live_query": 0.022,
-    "retrieval": 18.5,
-    "guardrail_off_topic": 0.463,
-    "guardrail_topic_relevance": 0.731,
-    "generation": 0.316,
-    "guardrail_grounding": 0.322
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 3.456,
+    "guardrail_off_topic": 0.093,
+    "guardrail_topic_relevance": 0.14,
+    "generation": 0.074,
+    "guardrail_grounding": 0.07
    }
   },
   {
@@ -900,16 +900,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 23.93,
-   "wall_ms": 23.96,
+   "total_ms": 4.83,
+   "wall_ms": 4.84,
    "stages": {
-    "guardrail_unsafe_input": 0.012,
-    "guardrail_live_query": 0.011,
-    "retrieval": 22.656,
-    "guardrail_off_topic": 0.378,
-    "guardrail_topic_relevance": 0.239,
-    "generation": 0.301,
-    "guardrail_grounding": 0.251
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 4.565,
+    "guardrail_off_topic": 0.076,
+    "guardrail_topic_relevance": 0.057,
+    "generation": 0.067,
+    "guardrail_grounding": 0.042
    }
   },
   {
@@ -918,16 +918,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 51.55,
-   "wall_ms": 51.58,
+   "total_ms": 11.68,
+   "wall_ms": 11.69,
    "stages": {
-    "guardrail_unsafe_input": 0.016,
-    "guardrail_live_query": 0.021,
-    "retrieval": 48.862,
-    "guardrail_off_topic": 0.532,
-    "guardrail_topic_relevance": 0.967,
-    "generation": 0.63,
-    "guardrail_grounding": 0.372
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 11.245,
+    "guardrail_off_topic": 0.089,
+    "guardrail_topic_relevance": 0.169,
+    "generation": 0.085,
+    "guardrail_grounding": 0.069
    }
   },
   {
@@ -936,16 +936,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 19.95,
-   "wall_ms": 19.97,
+   "total_ms": 5.24,
+   "wall_ms": 5.25,
    "stages": {
-    "guardrail_unsafe_input": 0.013,
-    "guardrail_live_query": 0.015,
-    "retrieval": 17.047,
-    "guardrail_off_topic": 0.746,
-    "guardrail_topic_relevance": 1.475,
-    "generation": 0.28,
-    "guardrail_grounding": 0.268
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 4.822,
+    "guardrail_off_topic": 0.093,
+    "guardrail_topic_relevance": 0.162,
+    "generation": 0.073,
+    "guardrail_grounding": 0.07
    }
   },
   {
@@ -954,16 +954,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 18.76,
-   "wall_ms": 18.78,
+   "total_ms": 5.55,
+   "wall_ms": 5.56,
    "stages": {
-    "guardrail_unsafe_input": 0.009,
-    "guardrail_live_query": 0.011,
-    "retrieval": 17.492,
-    "guardrail_off_topic": 0.308,
-    "guardrail_topic_relevance": 0.427,
-    "generation": 0.247,
-    "guardrail_grounding": 0.193
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.203,
+    "guardrail_off_topic": 0.079,
+    "guardrail_topic_relevance": 0.12,
+    "generation": 0.068,
+    "guardrail_grounding": 0.053
    }
   },
   {
@@ -972,16 +972,16 @@
    "lang": "en",
    "category": "en_curated",
    "status": "ok",
-   "total_ms": 18.89,
-   "wall_ms": 18.91,
+   "total_ms": 4.98,
+   "wall_ms": 4.98,
    "stages": {
-    "guardrail_unsafe_input": 0.012,
-    "guardrail_live_query": 0.013,
-    "retrieval": 17.798,
-    "guardrail_off_topic": 0.218,
-    "guardrail_topic_relevance": 0.418,
-    "generation": 0.191,
-    "guardrail_grounding": 0.169
+    "guardrail_unsafe_input": 0.005,
+    "guardrail_live_query": 0.003,
+    "retrieval": 4.602,
+    "guardrail_off_topic": 0.076,
+    "guardrail_topic_relevance": 0.15,
+    "generation": 0.071,
+    "guardrail_grounding": 0.053
    }
   },
   {
@@ -990,14 +990,14 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 13.81,
-   "wall_ms": 13.84,
+   "total_ms": 4.66,
+   "wall_ms": 4.67,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.012,
-    "retrieval": 12.07,
-    "guardrail_off_topic": 0.386,
-    "guardrail_topic_relevance": 1.261
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 4.078,
+    "guardrail_off_topic": 0.098,
+    "guardrail_topic_relevance": 0.453
    }
   },
   {
@@ -1006,14 +1006,14 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 18.77,
-   "wall_ms": 18.87,
+   "total_ms": 6.86,
+   "wall_ms": 6.87,
    "stages": {
-    "guardrail_unsafe_input": 0.014,
-    "guardrail_live_query": 0.018,
-    "retrieval": 17.461,
-    "guardrail_off_topic": 0.327,
-    "guardrail_topic_relevance": 0.849
+    "guardrail_unsafe_input": 0.005,
+    "guardrail_live_query": 0.007,
+    "retrieval": 6.506,
+    "guardrail_off_topic": 0.087,
+    "guardrail_topic_relevance": 0.216
    }
   },
   {
@@ -1022,14 +1022,14 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 19.59,
-   "wall_ms": 19.61,
+   "total_ms": 5.22,
+   "wall_ms": 5.23,
    "stages": {
-    "guardrail_unsafe_input": 0.019,
-    "guardrail_live_query": 0.024,
-    "retrieval": 18.636,
-    "guardrail_off_topic": 0.335,
-    "guardrail_topic_relevance": 0.461
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 4.893,
+    "guardrail_off_topic": 0.084,
+    "guardrail_topic_relevance": 0.211
    }
   },
   {
@@ -1038,11 +1038,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.04,
-   "wall_ms": 0.05,
+   "total_ms": 0.02,
+   "wall_ms": 0.02,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.008
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.005
    }
   },
   {
@@ -1051,14 +1051,14 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 19.54,
-   "wall_ms": 19.57,
+   "total_ms": 5.97,
+   "wall_ms": 5.98,
    "stages": {
-    "guardrail_unsafe_input": 0.004,
-    "guardrail_live_query": 0.007,
-    "retrieval": 18.179,
-    "guardrail_off_topic": 0.342,
-    "guardrail_topic_relevance": 0.96
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.004,
+    "retrieval": 5.618,
+    "guardrail_off_topic": 0.099,
+    "guardrail_topic_relevance": 0.227
    }
   },
   {
@@ -1067,11 +1067,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.08,
-   "wall_ms": 0.09,
+   "total_ms": 0.02,
+   "wall_ms": 0.02,
    "stages": {
-    "guardrail_unsafe_input": 0.012,
-    "guardrail_live_query": 0.015
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.006
    }
   },
   {
@@ -1080,14 +1080,14 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 7.73,
-   "wall_ms": 7.74,
+   "total_ms": 2.03,
+   "wall_ms": 2.04,
    "stages": {
-    "guardrail_unsafe_input": 0.009,
-    "guardrail_live_query": 0.01,
-    "retrieval": 7.191,
-    "guardrail_off_topic": 0.159,
-    "guardrail_topic_relevance": 0.301
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.002,
+    "retrieval": 1.666,
+    "guardrail_off_topic": 0.103,
+    "guardrail_topic_relevance": 0.236
    }
   },
   {
@@ -1096,11 +1096,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.04,
-   "wall_ms": 0.05,
+   "total_ms": 0.03,
+   "wall_ms": 0.03,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.011
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.007
    }
   },
   {
@@ -1109,11 +1109,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.03,
-   "wall_ms": 0.04,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.014,
-    "guardrail_live_query": 0.006
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003
    }
   },
   {
@@ -1122,11 +1122,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.02,
-   "wall_ms": 0.02,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.003,
-    "guardrail_live_query": 0.005
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003
    }
   },
   {
@@ -1135,11 +1135,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.02,
-   "wall_ms": 0.02,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.003,
-    "guardrail_live_query": 0.003
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.002
    }
   },
   {
@@ -1148,11 +1148,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.02,
-   "wall_ms": 0.02,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.003,
-    "guardrail_live_query": 0.004
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.002
    }
   },
   {
@@ -1161,14 +1161,14 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 11.45,
-   "wall_ms": 11.48,
+   "total_ms": 4.22,
+   "wall_ms": 4.23,
    "stages": {
-    "guardrail_unsafe_input": 0.003,
-    "guardrail_live_query": 0.005,
-    "retrieval": 10.119,
-    "guardrail_off_topic": 0.458,
-    "guardrail_topic_relevance": 0.812
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003,
+    "retrieval": 3.95,
+    "guardrail_off_topic": 0.075,
+    "guardrail_topic_relevance": 0.175
    }
   },
   {
@@ -1177,11 +1177,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.09,
-   "wall_ms": 0.11,
+   "total_ms": 0.02,
+   "wall_ms": 0.03,
    "stages": {
-    "guardrail_unsafe_input": 0.014,
-    "guardrail_live_query": 0.017
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.004
    }
   },
   {
@@ -1190,11 +1190,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.07,
-   "wall_ms": 0.08,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.01,
-    "guardrail_live_query": 0.019
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003
    }
   },
   {
@@ -1203,11 +1203,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.05,
-   "wall_ms": 0.05,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.008,
-    "guardrail_live_query": 0.005
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.001
    }
   },
   {
@@ -1216,11 +1216,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.05,
-   "wall_ms": 0.05,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.008,
-    "guardrail_live_query": 0.011
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.002
    }
   },
   {
@@ -1229,11 +1229,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.05,
-   "wall_ms": 0.05,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.008,
-    "guardrail_live_query": 0.012
+    "guardrail_unsafe_input": 0.001,
+    "guardrail_live_query": 0.002
    }
   },
   {
@@ -1242,11 +1242,11 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 0.03,
-   "wall_ms": 0.03,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.003,
-    "guardrail_live_query": 0.005
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.002
    }
   },
   {
@@ -1255,14 +1255,14 @@
    "lang": "en",
    "category": "en_off_corpus",
    "status": "refused",
-   "total_ms": 6.14,
-   "wall_ms": 6.17,
+   "total_ms": 2.01,
+   "wall_ms": 2.01,
    "stages": {
-    "guardrail_unsafe_input": 0.004,
-    "guardrail_live_query": 0.006,
-    "retrieval": 5.218,
-    "guardrail_off_topic": 0.35,
-    "guardrail_topic_relevance": 0.516
+    "guardrail_unsafe_input": 0.002,
+    "guardrail_live_query": 0.003,
+    "retrieval": 1.819,
+    "guardrail_off_topic": 0.071,
+    "guardrail_topic_relevance": 0.097
    }
   },
   {
@@ -1271,10 +1271,10 @@
    "lang": "en",
    "category": "unsafe",
    "status": "refused",
-   "total_ms": 0.05,
-   "wall_ms": 0.06,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.01
+    "guardrail_unsafe_input": 0.002
    }
   },
   {
@@ -1283,10 +1283,10 @@
    "lang": "en",
    "category": "unsafe",
    "status": "refused",
-   "total_ms": 0.04,
-   "wall_ms": 0.05,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.01
+    "guardrail_unsafe_input": 0.002
    }
   },
   {
@@ -1295,10 +1295,10 @@
    "lang": "en",
    "category": "unsafe",
    "status": "refused",
-   "total_ms": 0.04,
-   "wall_ms": 0.05,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.015
+    "guardrail_unsafe_input": 0.002
    }
   },
   {
@@ -1307,10 +1307,10 @@
    "lang": "en",
    "category": "unsafe",
    "status": "refused",
-   "total_ms": 0.04,
-   "wall_ms": 0.04,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.006
+    "guardrail_unsafe_input": 0.001
    }
   },
   {
@@ -1319,10 +1319,10 @@
    "lang": "en",
    "category": "unsafe",
    "status": "refused",
-   "total_ms": 0.04,
-   "wall_ms": 0.04,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {
-    "guardrail_unsafe_input": 0.008
+    "guardrail_unsafe_input": 0.001
    }
   },
   {
@@ -1331,8 +1331,8 @@
    "lang": "en",
    "category": "edge",
    "status": "refused",
-   "total_ms": 0.01,
-   "wall_ms": 0.02,
+   "total_ms": 0.0,
+   "wall_ms": 0.0,
    "stages": {}
   },
   {
@@ -1341,8 +1341,8 @@
    "lang": "en",
    "category": "edge",
    "status": "refused",
-   "total_ms": 0.02,
-   "wall_ms": 0.02,
+   "total_ms": 0.0,
+   "wall_ms": 0.01,
    "stages": {}
   },
   {
@@ -1351,8 +1351,8 @@
    "lang": "en",
    "category": "edge",
    "status": "refused",
-   "total_ms": 0.08,
-   "wall_ms": 0.09,
+   "total_ms": 4.75,
+   "wall_ms": 4.75,
    "stages": {}
   },
   {
@@ -1361,8 +1361,8 @@
    "lang": "en",
    "category": "edge",
    "status": "refused",
-   "total_ms": 0.03,
-   "wall_ms": 0.03,
+   "total_ms": 0.01,
+   "wall_ms": 0.02,
    "stages": {}
   },
   {
@@ -1371,8 +1371,8 @@
    "lang": "en",
    "category": "edge",
    "status": "refused",
-   "total_ms": 0.02,
-   "wall_ms": 0.03,
+   "total_ms": 0.01,
+   "wall_ms": 0.01,
    "stages": {}
   },
   {
@@ -1381,14 +1381,14 @@
    "lang": "en",
    "category": "edge",
    "status": "refused",
-   "total_ms": 53.95,
-   "wall_ms": 53.96,
+   "total_ms": 15.56,
+   "wall_ms": 15.57,
    "stages": {
-    "guardrail_unsafe_input": 0.019,
-    "guardrail_live_query": 0.054,
-    "retrieval": 52.815,
-    "guardrail_off_topic": 0.307,
-    "guardrail_topic_relevance": 0.657
+    "guardrail_unsafe_input": 0.005,
+    "guardrail_live_query": 0.01,
+    "retrieval": 15.121,
+    "guardrail_off_topic": 0.089,
+    "guardrail_topic_relevance": 0.313
    }
   },
   {
@@ -1397,16 +1397,16 @@
    "lang": "en",
    "category": "edge",
    "status": "ok",
-   "total_ms": 28.16,
-   "wall_ms": 28.17,
+   "total_ms": 9.23,
+   "wall_ms": 9.24,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.013,
-    "retrieval": 26.926,
-    "guardrail_off_topic": 0.395,
-    "guardrail_topic_relevance": 0.488,
-    "generation": 0.137,
-    "guardrail_grounding": 0.134
+    "guardrail_unsafe_input": 0.006,
+    "guardrail_live_query": 0.007,
+    "retrieval": 8.752,
+    "guardrail_off_topic": 0.097,
+    "guardrail_topic_relevance": 0.199,
+    "generation": 0.076,
+    "guardrail_grounding": 0.065
    }
   },
   {
@@ -1415,16 +1415,16 @@
    "lang": "en",
    "category": "edge",
    "status": "ok",
-   "total_ms": 7.13,
-   "wall_ms": 7.16,
+   "total_ms": 1.86,
+   "wall_ms": 1.86,
    "stages": {
-    "guardrail_unsafe_input": 0.006,
-    "guardrail_live_query": 0.005,
-    "retrieval": 5.847,
-    "guardrail_off_topic": 0.198,
-    "guardrail_topic_relevance": 0.514,
-    "generation": 0.196,
-    "guardrail_grounding": 0.316
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 1.534,
+    "guardrail_off_topic": 0.068,
+    "guardrail_topic_relevance": 0.157,
+    "generation": 0.038,
+    "guardrail_grounding": 0.034
    }
   },
   {
@@ -1433,16 +1433,16 @@
    "lang": "en",
    "category": "edge",
    "status": "ok",
-   "total_ms": 20.51,
-   "wall_ms": 20.53,
+   "total_ms": 5.22,
+   "wall_ms": 5.23,
    "stages": {
-    "guardrail_unsafe_input": 0.016,
-    "guardrail_live_query": 0.019,
-    "retrieval": 19.475,
-    "guardrail_off_topic": 0.136,
-    "guardrail_topic_relevance": 0.321,
-    "generation": 0.252,
-    "guardrail_grounding": 0.191
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 4.917,
+    "guardrail_off_topic": 0.07,
+    "guardrail_topic_relevance": 0.105,
+    "generation": 0.059,
+    "guardrail_grounding": 0.045
    }
   },
   {
@@ -1451,16 +1451,16 @@
    "lang": "en",
    "category": "edge",
    "status": "ok",
-   "total_ms": 17.61,
-   "wall_ms": 17.63,
+   "total_ms": 5.47,
+   "wall_ms": 5.48,
    "stages": {
-    "guardrail_unsafe_input": 0.011,
-    "guardrail_live_query": 0.011,
-    "retrieval": 16.441,
-    "guardrail_off_topic": 0.329,
-    "guardrail_topic_relevance": 0.235,
-    "generation": 0.255,
-    "guardrail_grounding": 0.261
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.003,
+    "retrieval": 5.118,
+    "guardrail_off_topic": 0.107,
+    "guardrail_topic_relevance": 0.067,
+    "generation": 0.089,
+    "guardrail_grounding": 0.07
    }
   },
   {
@@ -1469,16 +1469,16 @@
    "lang": "hi",
    "category": "hi_gold",
    "status": "ok",
-   "total_ms": 8.18,
-   "wall_ms": 8.21,
+   "total_ms": 1.75,
+   "wall_ms": 1.76,
    "stages": {
-    "guardrail_unsafe_input": 0.014,
-    "guardrail_live_query": 0.018,
-    "retrieval": 6.457,
-    "guardrail_off_topic": 0.42,
-    "guardrail_topic_relevance": 0.5,
-    "generation": 0.227,
-    "guardrail_grounding": 0.457
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.007,
+    "retrieval": 1.297,
+    "guardrail_off_topic": 0.112,
+    "guardrail_topic_relevance": 0.154,
+    "generation": 0.069,
+    "guardrail_grounding": 0.09
    }
   },
   {
@@ -1487,16 +1487,16 @@
    "lang": "hi",
    "category": "hi_gold",
    "status": "ok",
-   "total_ms": 13.83,
-   "wall_ms": 13.85,
+   "total_ms": 4.45,
+   "wall_ms": 4.46,
    "stages": {
-    "guardrail_unsafe_input": 0.022,
-    "guardrail_live_query": 0.029,
-    "retrieval": 12.311,
-    "guardrail_off_topic": 0.165,
-    "guardrail_topic_relevance": 0.529,
-    "generation": 0.296,
-    "guardrail_grounding": 0.387
+    "guardrail_unsafe_input": 0.003,
+    "guardrail_live_query": 0.004,
+    "retrieval": 4.027,
+    "guardrail_off_topic": 0.052,
+    "guardrail_topic_relevance": 0.155,
+    "generation": 0.087,
+    "guardrail_grounding": 0.103
    }
   },
   {
@@ -1505,16 +1505,16 @@
    "lang": "hi",
    "category": "hi_gold",
    "status": "ok",
-   "total_ms": 22.19,
-   "wall_ms": 22.21,
+   "total_ms": 7.82,
+   "wall_ms": 7.83,
    "stages": {
-    "guardrail_unsafe_input": 0.015,
-    "guardrail_live_query": 0.026,
-    "retrieval": 20.296,
-    "guardrail_off_topic": 0.377,
-    "guardrail_topic_relevance": 0.852,
-    "generation": 0.281,
-    "guardrail_grounding": 0.266
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.007,
+    "retrieval": 7.262,
+    "guardrail_off_topic": 0.121,
+    "guardrail_topic_relevance": 0.256,
+    "generation": 0.079,
+    "guardrail_grounding": 0.075
    }
   },
   {
@@ -1523,16 +1523,16 @@
    "lang": "hi",
    "category": "hi_gold",
    "status": "ok",
-   "total_ms": 14.98,
-   "wall_ms": 14.99,
+   "total_ms": 7.69,
+   "wall_ms": 7.69,
    "stages": {
-    "guardrail_unsafe_input": 0.012,
-    "guardrail_live_query": 0.011,
-    "retrieval": 14.118,
-    "guardrail_off_topic": 0.225,
-    "guardrail_topic_relevance": 0.308,
-    "generation": 0.129,
-    "guardrail_grounding": 0.127
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.004,
+    "retrieval": 7.211,
+    "guardrail_off_topic": 0.128,
+    "guardrail_topic_relevance": 0.181,
+    "generation": 0.071,
+    "guardrail_grounding": 0.068
    }
   },
   {
@@ -1541,14 +1541,14 @@
    "lang": "hi",
    "category": "hi_curated",
    "status": "refused",
-   "total_ms": 4.12,
-   "wall_ms": 4.13,
+   "total_ms": 2.73,
+   "wall_ms": 2.74,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.008,
-    "retrieval": 3.676,
-    "guardrail_off_topic": 0.177,
-    "guardrail_topic_relevance": 0.216
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.005,
+    "retrieval": 2.433,
+    "guardrail_off_topic": 0.14,
+    "guardrail_topic_relevance": 0.123
    }
   },
   {
@@ -1557,16 +1557,16 @@
    "lang": "hi",
    "category": "hi_curated",
    "status": "ok",
-   "total_ms": 16.38,
-   "wall_ms": 16.39,
+   "total_ms": 5.76,
+   "wall_ms": 5.77,
    "stages": {
-    "guardrail_unsafe_input": 0.007,
-    "guardrail_live_query": 0.007,
-    "retrieval": 14.327,
-    "guardrail_off_topic": 0.576,
-    "guardrail_topic_relevance": 0.679,
-    "generation": 0.366,
-    "guardrail_grounding": 0.359
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.004,
+    "retrieval": 5.176,
+    "guardrail_off_topic": 0.154,
+    "guardrail_topic_relevance": 0.188,
+    "generation": 0.113,
+    "guardrail_grounding": 0.099
    }
   },
   {
@@ -1575,16 +1575,16 @@
    "lang": "hi",
    "category": "hi_curated",
    "status": "ok",
-   "total_ms": 10.44,
-   "wall_ms": 10.46,
+   "total_ms": 2.52,
+   "wall_ms": 2.52,
    "stages": {
-    "guardrail_unsafe_input": 0.014,
-    "guardrail_live_query": 0.044,
-    "retrieval": 8.431,
-    "guardrail_off_topic": 0.524,
-    "guardrail_topic_relevance": 0.599,
-    "generation": 0.385,
-    "guardrail_grounding": 0.366
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.004,
+    "retrieval": 2.092,
+    "guardrail_off_topic": 0.117,
+    "guardrail_topic_relevance": 0.116,
+    "generation": 0.089,
+    "guardrail_grounding": 0.08
    }
   },
   {
@@ -1593,16 +1593,16 @@
    "lang": "te",
    "category": "te_gold",
    "status": "ok",
-   "total_ms": 7.49,
-   "wall_ms": 7.5,
+   "total_ms": 2.2,
+   "wall_ms": 2.21,
    "stages": {
-    "guardrail_unsafe_input": 0.016,
-    "guardrail_live_query": 0.032,
-    "retrieval": 6.153,
-    "guardrail_off_topic": 0.171,
-    "guardrail_topic_relevance": 0.737,
-    "generation": 0.172,
-    "guardrail_grounding": 0.135
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.007,
+    "retrieval": 1.597,
+    "guardrail_off_topic": 0.081,
+    "guardrail_topic_relevance": 0.34,
+    "generation": 0.09,
+    "guardrail_grounding": 0.064
    }
   },
   {
@@ -1611,16 +1611,16 @@
    "lang": "te",
    "category": "te_gold",
    "status": "ok",
-   "total_ms": 10.21,
-   "wall_ms": 10.24,
+   "total_ms": 3.03,
+   "wall_ms": 3.04,
    "stages": {
-    "guardrail_unsafe_input": 0.009,
-    "guardrail_live_query": 0.018,
-    "retrieval": 7.135,
-    "guardrail_off_topic": 0.407,
-    "guardrail_topic_relevance": 1.876,
-    "generation": 0.347,
-    "guardrail_grounding": 0.359
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.009,
+    "retrieval": 2.218,
+    "guardrail_off_topic": 0.109,
+    "guardrail_topic_relevance": 0.445,
+    "generation": 0.134,
+    "guardrail_grounding": 0.096
    }
   },
   {
@@ -1629,16 +1629,16 @@
    "lang": "te",
    "category": "te_gold",
    "status": "ok",
-   "total_ms": 10.08,
-   "wall_ms": 10.11,
+   "total_ms": 2.96,
+   "wall_ms": 2.97,
    "stages": {
-    "guardrail_unsafe_input": 0.016,
-    "guardrail_live_query": 0.025,
-    "retrieval": 7.841,
-    "guardrail_off_topic": 0.178,
-    "guardrail_topic_relevance": 1.268,
-    "generation": 0.336,
-    "guardrail_grounding": 0.352
+    "guardrail_unsafe_input": 0.004,
+    "guardrail_live_query": 0.007,
+    "retrieval": 2.385,
+    "guardrail_off_topic": 0.083,
+    "guardrail_topic_relevance": 0.305,
+    "generation": 0.079,
+    "guardrail_grounding": 0.077
    }
   }
  ]

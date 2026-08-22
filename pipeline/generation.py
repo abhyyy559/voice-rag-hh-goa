@@ -178,6 +178,14 @@ def generate_answer_extractive(query: str, results: List[RetrievalResult], cfg: 
                 continue
             sent_lower = sent.lower()
             sent_words = set(w.lower() for w in words)
+            # Query-echo guard: MS MARCO passages often embed the raw user
+            # question verbatim. Echoing it back as the "answer" asserts a
+            # claim the context never made (judge-flagged hallucination
+            # class). Skip sentences whose words are ~all query words with
+            # at most one novel word.
+            novel = sent_words - q_words
+            if len(novel) <= 1 and len(sent_words & q_words) >= 2:
+                continue
             overlap = len(q_words & sent_words)
             if overlap < min_overlap:
                 continue  # skip sentences with insufficient topical grounding

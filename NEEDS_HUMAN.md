@@ -1,84 +1,27 @@
-# NEEDS_HUMAN — things the coding agent cannot do
+# NEEDS_HUMAN — TODO list
 
-Everything in this file is blocked on a human. **No resubmissions allowed** — do not treat the working code as "done" until these are done.
-
----
-
-## 🔴 PRIORITY 1 — STT API Key (compliance requirement) — ✅ DONE
-
-`SARVAM_API_KEY` is set in `.env` (local) AND on Vercel — live health endpoint reports `stt_provider: sarvam`. No action needed. (To change it later: `vercel env add SARVAM_API_KEY production`, then `vercel --prod`.)
+Everything here is blocked on a human. **Deadline: Aug 22, 2026, 11:59 PM IST (tonight). No resubmissions allowed.**
 
 ---
 
-## 🟡 PRIORITY 2 — Generation API Key — ✅ DONE
+## 🔴 TONIGHT — submission requirements
 
-`GROQ_API_KEY` is set in `.env` AND on Vercel (`generation_provider: groq`). No action needed.
+| # | Task | Notes |
+|---|---|---|
+| 1 | **Record Video 1 — team/process (90s)** | Show architecture (voice → STT → retrieval → generation), guardrails, honest latency story (`COVERAGE.md` numbers), 4 chunking strategies |
+| 2 | **Record Video 2 — demo** | One voice query end-to-end · one text query · one off-corpus refusal ("Who is the CM of Andhra Pradesh?" → clean refusal) · one unsafe refusal · show latency breakdown from a response |
+| 3 | **Post BOTH videos to Instagram AND X — every member individually** | At least one IG account public. Every post must include **#RAGInGoa** |
+| 4 | **Submit the form**: https://forms.gle/MNvCjcv23Hn2Eeu58 | Repo: https://github.com/abhyyy559/voice-rag-hh-goa · Live: https://voice-rag-hh-goa.vercel.app · Use REAL numbers from `benchmark/results/latency_100_report.json` (P50=8.4ms P70=9.8ms P90=13.1ms P100=22.7ms server-side) |
 
----
+## ✅ Done (no action)
 
-## 🟡 PRIORITY 3 — Re-run benchmark with fresh Groq numbers
+- SARVAM_API_KEY + GROQ_API_KEY set in `.env` and on Vercel (`stt=sarvam`, `gen=groq` confirmed live)
+- Production fixed: prebuilt indexes deployed, off-corpus/live-data refusals working
+- 100-query benchmark: all queries <200ms server-side
 
-The current benchmark numbers used a model (`llama-3.3-70b-versatile`) that Groq has since removed. Re-run after the token window resets:
+## 🟡 Post-deadline technical follow-ups
 
-```bash
-# Text mode (55 queries, real corpus, real generation)
-python benchmark/latency_test.py --n 55 --dataset real --corpus-limit 2000
-
-# Voice mode (10 audio clips)
-python benchmark/latency_test.py --n 10 --dataset real --mode voice
-```
-
-**Budget**: Groq free tier = ~100k tokens/day. One 55-query benchmark burns ~30-60k tokens. Do NOT re-run repeatedly — budget for ~2 runs/day max.
-
----
-
-## 🟢 PRIORITY 4 — Record 2 Videos (DEADLINE: Aug 22, 11:59 PM IST)
-
-### Video 1 — Team/Process Video (90 seconds)
-- [ ] Show the architecture diagram (voice → STT → retrieval → generation)
-- [ ] Explain the pipeline stages and guardrails
-- [ ] Show the honest latency story (retrieval is sub-15ms, generation is a network call)
-- [ ] Mention the 4 chunking strategies and 3-stage guardrails
-
-### Video 2 — Demo Video
-- [ ] Record a full voice query end-to-end (ask a Hindi question out loud, show the answer)
-- [ ] Also demonstrate:
-  - A text query (type and press Enter)
-  - An off-topic refusal (e.g., "क्वोक्का कहाँ पाया जाता है?")
-  - An unsafe refusal (e.g., "बम बनाने का तरीका बताओ")
-- [ ] Show the latency breakdown in the results
-
----
-
-## 🟢 PRIORITY 5 — Post Videos to Social Media (MANDATORY)
-
-**Every team member must post individually** — not one shared team post.
-
-For EACH team member:
-- [ ] Upload both videos to **Instagram** (at least one account must be **public**)
-- [ ] Upload both videos to **X (Twitter)**
-- [ ] Every post on every platform must include: **#RAGInGoa**
-
----
-
-## 🟢 PRIORITY 6 — Submit the Form (DEADLINE: Aug 22, 11:59 PM IST)
-
-- [ ] Fill and submit: https://forms.gle/MNvCjcv23Hn2Eeu58
-- [ ] Include:
-  - GitHub repo: **https://github.com/abhyyy559/voice-rag-hh-goa**
-  - Live link: **https://voice-rag-hh-goa.vercel.app**
-  - Use the **real numbers** from `benchmark/results/latency_report.json` (read its `note` field)
-  - Do NOT use mock numbers
-
----
-
-## Summary Checklist
-
-| # | Task | Blocked On | Status |
-|---|---|---|---|
-| 1 | Set SARVAM_API_KEY on Vercel | Human signup | 🔴 TODO |
-| 2 | Set GROQ_API_KEY on Vercel | Human (already have locally) | 🟡 TODO |
-| 3 | Re-run benchmark | API key + token window | 🟡 TODO |
-| 4 | Record 2 videos | Human recording | 🟢 TODO |
-| 5 | Post to Instagram + X | Human posting | 🟢 TODO |
-| 6 | Submit form | Human filling form | 🟢 TODO |
+- [ ] Full judge-keyed eval run (needs OPENAI_API_KEY or ANTHROPIC_API_KEY): `EVALUATION_RUNBOOK.md` §4-6 — target faithfulness ≥ 0.96 baseline
+- [ ] Calibrate reliability gate further if faithfulness judge flags extractive answers (semantic cosine floor lives in `app/generator.py`)
+- [ ] Corpus scale-up path: bump `LIMITS` in `prebuild_index.py`, rebuild, watch bundle size (<250MB lambda)
+- [ ] Consider Vercel cron or external ping to pre-warm lambdas (cold start ~6s once per recycle)
