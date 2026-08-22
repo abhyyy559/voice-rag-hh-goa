@@ -1,6 +1,15 @@
 # Voice RAG — HH Goa 2026, Task 2
 
-Speak a question in English, Hindi, or Telugu → it gets transcribed → hybrid retrieval over the MSMARCO-XI corpus → grounded, guardrailed answer. **No LLM in the hot path** — answers are extracted verbatim from retrieved passages, which is how the pipeline stays far under the 200 ms budget.
+> **Explain-it-to-anyone version:** You talk to a website. It writes down what you said. It then looks through a big shelf of real passages (a bookshelf with 236,000 slips of paper) and picks the few that actually answer you. It reads the best sentences out loud — *from those slips, word-for-word* — so it can never invent facts. If your question isn't in the bookshelf ("Who is the CM of Andhra Pradesh?"), it says *"I don't know — that's not in my data"* instead of guessing. The whole lookup takes about **10 milliseconds**.
+
+Speak a question in English, Hindi, or Telugu → it gets transcribed → hybrid retrieval over the MSMARCO-XI corpus → grounded, guardrailed answer. **No LLM in the hot path** — answers are extracted verbatim from retrieved passages, which is how the pipeline stays far under the latency budget.
+
+## Evaluators — start here (2 minutes)
+
+1. **Live latency, self-verifiable:** open [`/api/benchmark?n=100`](https://voice-rag-hh-goa.vercel.app/api/benchmark?n=100) — runs 100 real corpus questions through the deployed pipeline right now and returns fresh percentiles.
+2. **Try the product:** ask *"What is a corporation?"* (answer) · *"Who is the CM of Andhra Pradesh?"* (clean refusal — verified absent from all 97,941 rows) · *"Price of bitcoin today?"* (refused: static corpus).
+3. **Machine-readable state:** [`/api/health`](https://voice-rag-hh-goa.vercel.app/api/health) · [`/api/stats`](https://voice-rag-hh-goa.vercel.app/api/stats) · interactive API docs at [`/docs`](https://voice-rag-hh-goa.vercel.app/docs).
+4. **Standard eval harness:** `EVALUATION_RUNBOOK.md` wires `BeaconBandhu/rag-local-eval-loop` natively (`RAG_PROJECT_ROOT=<repo>`); committed adapters in `app/embedder.py` / `app/generator.py`; measured baseline + methodology inside.
 
 **Live:** https://voice-rag-hh-goa.vercel.app
 **Repo:** https://github.com/abhyyy559/voice-rag-hh-goa
