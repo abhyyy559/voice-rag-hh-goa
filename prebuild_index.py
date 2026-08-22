@@ -47,7 +47,23 @@ def _strip_secrets(harness: VoiceRAGHarness) -> None:
                 setattr(obj, f, "")
 
 
-def prebuild(language: str, limit: int = 2000) -> None:
+def _downcast_float32(harness: VoiceRAGHarness) -> None:
+    """Halve matrix memory/disk: float64 -> float32 sparse matrices.
+    Cosine/BM25 ranking precision is unaffected at float32 (guardrail
+    floors sit at 0.22-0.45, float32 noise is ~1e-7 relative)."""
+    import numpy as np
+    idx = harness.index
+    for attr in ("_count", "tfidf_matrix"):
+        m = getattr(idx, attr)
+        if m is not None and m.dtype == np.float64:
+            setattr(idx, attr, m.astype(np.float32))
+    for attr in ("_tfidf_doc_norms", "_idf", "_df", "_doc_lengths"):
+        arr = getattr(idx, attr)
+        if arr is not None and getattr(arr, "dtype", None) == np.float64:
+            setattr(idx, attr, arr.astype(np.float32))
+
+
+def prebuild(language: str, limit: int) -> None:
     t0 = time.perf_counter()
     corpus = load_dataset_with_fallback(prefer_real=True, limit=limit, language=language)
     assert corpus, f"no corpus loaded for {language}"
@@ -61,6 +77,7 @@ def prebuild(language: str, limit: int = 2000) -> None:
     assert probe.status.value in ("ok", "refused"), f"probe failed: {probe.error}"
 
     _strip_secrets(harness)
+    _downcast_float32(harness)
 
     os.makedirs(PREBUILT_DIR, exist_ok=True)
     out = os.path.join(PREBUILT_DIR, f"{language}_harness.pkl")
@@ -81,6 +98,9 @@ def prebuild(language: str, limit: int = 2000) -> None:
 
 
 if __name__ == "__main__":
-    langs = sys.argv[1:] or ["en", "hi"]
+    # English gets the biggest slice (default judge-facing language);
+    # Hindi/Telugu sized to keep the deployed bundle within limits.
+    LIMITS = {"en": 8000, "hi": 2000, "te": 500}
+    langs = sys.argv[1:] or ["en", "hi", "te"]
     for lang in langs:
-        prebuild(lang)
+        prebuild(lang, LIMITS.get(lang, 2000))

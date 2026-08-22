@@ -39,6 +39,13 @@ BUNDLED_REAL_PATH = os.path.join(os.path.dirname(__file__), "real_corpus.json")
 # the default English index load there at all.
 BUNDLED_ENGLISH_PATH = os.path.join(os.path.dirname(__file__), "english_corpus.json")
 
+# Bundled TELUGU slice (500 records from the Telugu validation parquet) —
+# same deployment rationale as the English bundle.
+BUNDLED_TELUGU_PATH = os.path.join(os.path.dirname(__file__), "telugu_corpus.json")
+
+_BUNDLED_BY_LANG = {"hi": BUNDLED_REAL_PATH, "en": BUNDLED_ENGLISH_PATH,
+                    "te": BUNDLED_TELUGU_PATH}
+
 
 def load_sample_dataset() -> List[Dict[str, Any]]:
     with open(SAMPLE_PATH, "r", encoding="utf-8") as f:
@@ -153,10 +160,11 @@ def load_real_dataset(split: str = "validation", limit: Optional[int] = None,
     if os.path.exists(cache_path):
         return _load_from_parquet(cache_path, limit)
 
-    # Bundled real slice (preferred over the slow HF streaming path).
-    # Only use for Hindi — this file contains Hindi-only data.
-    if language == "hi" and os.path.exists(BUNDLED_REAL_PATH):
-        with open(BUNDLED_REAL_PATH, "r", encoding="utf-8") as f:
+    # Bundled real slice (preferred over the slow HF streaming path) — this
+    # is what deployment lambdas use, since data/cache is never shipped.
+    bundle = _BUNDLED_BY_LANG.get(language)
+    if bundle and os.path.exists(bundle):
+        with open(bundle, "r", encoding="utf-8") as f:
             corpus = json.load(f)
         return corpus[:limit] if limit else corpus
 

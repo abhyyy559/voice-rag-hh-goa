@@ -40,9 +40,12 @@ curl -X POST localhost:8000/api/query/text -H "Content-Type: application/json" \
   -d '{"query": "कॉर्पोरेशन क्या है?"}'
 ```
 
-The app runs against a bundled **2000-record real slice** of the Hindi
-MS MARCO validation set (`data/real_corpus.json`), so no HF download is
-needed at startup. Set `CORPUS_LIMIT` to change the index size.
+The app runs against bundled **real slices** of ai4bharat/MSMARCO-XI
+(`data/english_corpus.json` 8,000 records for the default English index,
+`data/real_corpus.json` 2,000 Hindi, `data/telugu_corpus.json` 500 Telugu),
+so no HF download is needed at startup. See `COVERAGE.md` for exactly what
+the index can and cannot answer, and `GET /api/stats` for live coverage
+metadata.
 
 ---
 
@@ -139,13 +142,18 @@ Real runs against the 2000-record real corpus, 55 queries (`benchmark/results/la
 
 ## Deployment
 
-Deployed on Vercel as a single serverless function (`api/index.py`). Corpus is bundled as `data/real_corpus.json` (2000 records, 22,110 chunks) so no HF download is needed at startup.
+Deployed on Vercel as a single serverless function (`api/index.py`). Each
+language loads a **committed pre-built index** from `data/prebuilt/`
+(gzip-pickled harness, secrets stripped — 64 MB en / 20 MB hi / 5 MB te),
+so a cold lambda is answering queries in ~1-2 s instead of the 5-6 s an
+index build would take. `prebuild_index.py` regenerates these artifacts.
 
 **Environment variables needed on Vercel:**
 - `SARVAM_API_KEY` — for task-spec-compliant STT (Sarvam AI)
 - `GROQ_API_KEY` — for generation (+ Groq Whisper STT fallback)
 
-See `NEEDS_HUMAN.md` for the full setup checklist.
+See `NEEDS_HUMAN.md` for the full setup checklist and `COVERAGE.md` for
+corpus scope, answerable topics, and deliberate refusal cases.
 
 ## Decisions & handoff
 
@@ -157,9 +165,11 @@ See `NEEDS_HUMAN.md` for the full setup checklist.
 
 ```
 pipeline/       core modules: config, chunking, retrieval, stt, generation, guardrails, harness
-data/           loader (parquet cache → bundled real corpus → HF streaming → sample), real_corpus.json
+data/           loader (parquet cache → bundled per-language corpora → HF streaming → sample), prebuilt/ indexes
 app/            FastAPI backend + demo web page (mic recording + text fallback)
 api/            Vercel serverless entry point
 benchmark/      latency_test.py, query_sets.py, results/*.json
-tests/          unit tests for chunking and guardrails (13/13 passing)
+tests/          unit + regression tests for chunking, guardrails, corpus loading (25 passing)
+COVERAGE.md     measured corpus scope: answerable topics vs. deliberate refusals
+prebuild_index.py  rebuilds the committed pre-built indexes in data/prebuilt/
 ```

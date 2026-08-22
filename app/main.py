@@ -196,6 +196,55 @@ def health():
     }
 
 
+# Topic coverage of the indexed MSMARCO-XI slice (measured by keyword
+# bucketing over the bundled corpora — see COVERAGE.md). Shown on
+# /api/stats so the retrieval scope is inspectable, not a black box.
+_TOPICS = {
+    "strong_coverage": [
+        "health & medicine", "history & polity", "business & economics",
+        "geography & places", "how-to / DIY", "mathematics",
+        "science & physics", "food & cooking", "education & exams",
+        "technology & computing",
+    ],
+    "thin_coverage": ["sports", "religion & culture", "regional current affairs"],
+    "never_answered_by_design": [
+        "anything absent from the dataset (e.g. office-holders like a state's CM): "
+        "the guardrails refuse instead of guessing",
+    ],
+}
+
+
+@app.get("/api/stats")
+def stats():
+    _ensure_default_loaded()
+    return {
+        "dataset": "ai4bharat/MSMARCO-XI (validation split)",
+        "latency_budget_ms": 200,
+        "retrieval_mode": "in-process hybrid BM25 + TF-IDF",
+        "default_generation": "extractive (sub-ms); 'mode=deep' uses Groq LLM",
+        "topics": _TOPICS,
+        "languages": {
+            code: {
+                "name": SUPPORTED_LANGUAGES[code],
+                "chunks": _language_stats.get(code, {}).get("chunks", 0),
+                "loaded": code in _harnesses,
+            }
+            for code in SUPPORTED_LANGUAGES
+        },
+        "example_queries": {
+            "answerable": [
+                "What is a corporation?",
+                "How do you make tea?",
+                "What are the symptoms of vitamin D deficiency?",
+            ],
+            "refused_by_design": [
+                "Who is the CM of Andhra Pradesh?",   # not in dataset
+                "Who won yesterday's match?",          # no live data
+            ],
+        },
+    }
+
+
 @app.post("/api/query/text")
 def query_text(payload: TextQuery):
     if not payload.query.strip():

@@ -291,9 +291,14 @@ class VoiceRAGHarness:
         """Try to load a pre-built harness from disk cache."""
         cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "cache")
         os.makedirs(cache_dir, exist_ok=True)
-        
-        # Create cache key from chunk count and config
-        cache_key = f"harness_{len(chunks)}_{cfg.retrieval.hybrid_alpha}_{cfg.chunking.fixed_chunk_size}"
+
+        # Cache key includes a corpus fingerprint (first/last chunk texts) so
+        # different languages/corpora with coincidentally equal chunk counts
+        # can never load each other's index.
+        corpus_fp = hashlib.md5(
+            (chunks[0].text[:80] + "|" + chunks[-1].text[:80]).encode("utf-8")
+        ).hexdigest()[:10] if chunks else "empty"
+        cache_key = f"harness_{len(chunks)}_{corpus_fp}_{cfg.retrieval.hybrid_alpha}_{cfg.chunking.fixed_chunk_size}"
         cache_path = os.path.join(cache_dir, f"{cache_key}.pkl")
         
         if os.path.exists(cache_path):
@@ -313,8 +318,10 @@ class VoiceRAGHarness:
         """Save the harness to disk cache for faster startup."""
         cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "cache")
         os.makedirs(cache_dir, exist_ok=True)
-        
-        cache_key = f"harness_{len(self.chunks)}_{self.cfg.retrieval.hybrid_alpha}_{self.cfg.chunking.fixed_chunk_size}"
+        corpus_fp = hashlib.md5(
+            (self.chunks[0].text[:80] + "|" + self.chunks[-1].text[:80]).encode("utf-8")
+        ).hexdigest()[:10] if self.chunks else "empty"
+        cache_key = f"harness_{len(self.chunks)}_{corpus_fp}_{self.cfg.retrieval.hybrid_alpha}_{self.cfg.chunking.fixed_chunk_size}"
         cache_path = os.path.join(cache_dir, f"{cache_key}.pkl")
         
         try:
